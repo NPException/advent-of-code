@@ -2,7 +2,7 @@
   (:require [clojure.java.io :as io]
             [clojure.edn :as edn]))
 
-;; --- Day 1: Report Repair ---
+;; --- Day 1: Report Repair --- https://adventofcode.com/2020/day/1
 
 (def task-input
   (-> (io/resource "inputs/aoc-2020/day-1.txt")
