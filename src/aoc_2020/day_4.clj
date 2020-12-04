@@ -1,12 +1,11 @@
 (ns aoc-2020.day-4
-  (:require [clojure.java.io :as io]
-            [clojure.string :as string]
+  (:require [clojure.string :as string]
             [aoc-utils :as u]))
 
 ;; --- Day 4: Passport Processing --- https://adventofcode.com/2020/day/4
 
 (def task-input
-  (slurp (io/resource "inputs/aoc-2020/day-4.txt")))
+  (u/slurp-resource "inputs/aoc-2020/day-4.txt"))
 
 
 ;; common parts

@@ -1,13 +1,11 @@
 (ns aoc-2020.day-1
-  (:require [clojure.java.io :as io]
+  (:require [aoc-utils :as u]
             [clojure.edn :as edn]))
 
 ;; --- Day 1: Report Repair --- https://adventofcode.com/2020/day/1
 
 (def task-input
-  (-> (io/resource "inputs/aoc-2020/day-1.txt")
-      slurp
-      (#(str "[" % "]"))
+  (-> (str "[" (u/slurp-resource "inputs/aoc-2020/day-1.txt") "]")
       edn/read-string))
 
 
