@@ -29,9 +29,7 @@
 
 (defn all-required-fields?
   [passport]
-  (every?
-    (set (keys passport))
-    ["byr" "iyr" "eyr" "hgt" "hcl" "ecl" "pid"]))
+  (every? passport ["byr" "iyr" "eyr" "hgt" "hcl" "ecl" "pid"]))
 
 
 ;; validator for part 2
