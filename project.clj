@@ -1,6 +1,7 @@
 (defproject advent-of-code "0.1.0-SNAPSHOT"
   :license {:name "MIT License"
             :url "https://en.wikipedia.org/wiki/MIT_License"}
+  :global-vars {*warn-on-reflection* true}
   :dependencies [[org.clojure/clojure "1.10.1"]
                  [criterium "0.4.6"]]
   :target-path "target/%s"
