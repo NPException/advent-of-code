@@ -19,8 +19,7 @@
 (defn find-my-seat
   [ids]
   (->> (sort ids)
-       (#(interleave % (rest %)))
-       (partition 2)
+       (partition 2 1)
        (filter (fn [[a b]] (not= (inc a) b)))
        ffirst
        inc))
