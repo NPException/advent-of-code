@@ -5,7 +5,7 @@
 ;; --- Day 4: Passport Processing --- https://adventofcode.com/2020/day/4
 
 (def task-input
-  (u/slurp-resource "inputs/aoc-2020/day-4.txt"))
+  (u/slurp-resource "inputs/aoc_2020/day-4.txt"))
 
 
 ;; common parts

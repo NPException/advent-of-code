@@ -5,7 +5,7 @@
 ;; --- Day 3: Toboggan Trajectory --- https://adventofcode.com/2020/day/3
 
 (def task-input
-  (u/slurp-resource "inputs/aoc-2020/day-3.txt"))
+  (u/slurp-resource "inputs/aoc_2020/day-3.txt"))
 
 
 (defn count-trees

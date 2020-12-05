@@ -4,7 +4,7 @@
 ;; --- Day 2: Password Philosophy --- https://adventofcode.com/2020/day/2
 
 (def task-input
-  (u/slurp-resource "inputs/aoc-2020/day-2.txt"))
+  (u/slurp-resource "inputs/aoc_2020/day-2.txt"))
 
 
 (defn line->rule-set

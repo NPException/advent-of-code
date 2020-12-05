@@ -1,5 +1,7 @@
 (ns aoc-utils
-  (:require [clojure.java.io :as io]))
+  (:require [clojure.java.io :as io]
+            [clojure.string :as string])
+  (:import [java.time LocalDateTime]))
 
 
 (defn slurp-resource
@@ -13,3 +15,25 @@
   (try
     (Integer/parseInt s)
     (catch Exception _)))
+
+
+
+
+(defn start-day
+  ([]
+   (let [now (LocalDateTime/now)]
+     (start-day (-> now .getYear) (-> now .getDayOfMonth))))
+  ([year day]
+   ;; create input text file
+   (.createNewFile (io/file (str "./resources/inputs/aoc_" year "/day-" day ".txt")))
+   ;; create clojure namespace file
+   (let [ns-file (io/file (str "./src/aoc_" year "/day_" day ".clj"))]
+     (when (.createNewFile ns-file)
+       (-> (slurp-resource "dummy_ns.edn")
+           (string/replace #"%>.+?<%" {"%>year<%" (str year)
+                                       "%>day<%"  (str day)})
+           (#(spit ns-file %)))))))
+
+(comment
+  (start-day)
+  )

@@ -5,7 +5,7 @@
 ;; --- Day 1: Report Repair --- https://adventofcode.com/2020/day/1
 
 (def task-input
-  (-> (str "[" (u/slurp-resource "inputs/aoc-2020/day-1.txt") "]")
+  (-> (str "[" (u/slurp-resource "inputs/aoc_2020/day-1.txt") "]")
       edn/read-string))
 
 
