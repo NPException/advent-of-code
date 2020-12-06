@@ -7,20 +7,22 @@
 (def task-input
   (u/slurp-resource "inputs/aoc_2020/day-6.txt"))
 
+(def groups
+  (string/split task-input #"\n\n"))
 
+
+;; Part 1 counter
 (defn count-any
-  [input]
-  (->> (string/split input #"\n\n")
-       (map set)
-       (map #(disj % \newline))
-       (map count)
-       (apply +)))
+  [group]
+  (-> (set group)
+      (disj \newline)
+      count))
 
 
 
 (comment
   ;; Part 1
-  (count-any task-input)
+  (apply + (map count-any groups))
   ;; Part 2
 
   )
