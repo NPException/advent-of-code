@@ -10,6 +10,12 @@
   (slurp (io/resource path)))
 
 
+(defn inspect
+  [x]
+  (println x)
+  x)
+
+
 (defn parse-int
   "Pares the given String to an integer. If it cannot be parsed, returns nil."
   [s]
@@ -17,6 +23,14 @@
     (Integer/parseInt s)
     (catch Exception _)))
 
+
+(defn cpmap
+  "A chunked variant of pmap. Instead of using one thread for application of f,
+  uses one thread for n applications of f."
+  [n f col]
+  (->> (partition-all n col)
+       (pmap #(mapv f %))
+       (apply concat)))
 
 
 
