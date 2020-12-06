@@ -24,6 +24,24 @@
     (catch Exception _)))
 
 
+(def ^:private hex-lookup
+  (let [hex-chars [\0 \1 \2 \3 \4 \5 \6 \7 \8 \9 \a \b \c \d \e \f]]
+    (->> hex-chars
+         (mapcat #(interleave (repeat %) hex-chars))
+         (partition 2)
+         (mapv #(apply str %)))))
+
+
+(defn byte->hex
+  [b]
+  (hex-lookup (Byte/toUnsignedInt b)))
+
+
+(defn bytes->hex
+  [bytes]
+  (apply str (mapv byte->hex bytes)))
+
+
 (defn cpmap
   "A chunked variant of pmap. Instead of using one thread for application of f,
   uses one thread for n applications of f."
