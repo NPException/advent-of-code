@@ -32,7 +32,7 @@
          input (:body @(http/get (str "https://adventofcode.com/" year "/day/" day "/input")
                                  {:headers {"cookie" (str "session=" (System/getenv "AOC_SESSION"))}}))]
      (-> inputs-file .getParentFile .mkdirs)
-     (spit inputs-file input))
+     (spit inputs-file (string/trim-newline input)))
    ;; create clojure namespace file
    (let [ns-file (io/file (str "./src/aoc_" year "/day_" day ".clj"))]
      (-> ns-file .getParentFile .mkdirs)
