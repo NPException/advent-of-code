@@ -12,27 +12,17 @@
   (string/split task-input #"\n\n"))
 
 
-;; Part 1 counter
-(defn count-any
-  [group]
-  (-> (set group)
-      (disj \newline)
-      count))
-
-
-;; Part 2 counter
-(defn count-every
-  [group]
-  (->> (string/split-lines group)
-       (map set)
-       (reduce set/intersection)
-       count))
-
+(defn count-via
+  [set-op]
+  #(->> (string/split-lines %)
+        (map set)
+        (reduce set-op)
+        count))
 
 
 (comment
   ;; Part 1
-  (apply + (map count-any groups))
+  (apply + (map (count-via set/union) groups))
   ;; Part 2
-  (apply + (map count-every groups))
+  (apply + (map (count-via set/intersection) groups))
   )
