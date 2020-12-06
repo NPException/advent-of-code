@@ -20,14 +20,18 @@
 
 
 (defn start-day
+  "Initializes a new namespace for the given day and downloads the input for the day.
+  This requires a valid session id in the environment variable 'AOC_SESSION'."
   ([]
    (let [now (LocalDateTime/now)]
      (start-day (-> now .getYear) (-> now .getDayOfMonth))))
   ([year day]
    ;; create input text file
-   (let [inputs-file (io/file (str "./resources/inputs/aoc_" year "/day-" day ".txt"))]
+   (let [inputs-file (io/file (str "./resources/inputs/aoc_" year "/day-" day ".txt"))
+         input (:body @(http/get (str "https://adventofcode.com/" year "/day/" day "/input")
+                                 {:headers {"cookie" (str "session=" (System/getenv "AOC_SESSION"))}}))]
      (-> inputs-file .getParentFile .mkdirs)
-     (.createNewFile inputs-file))
+     (spit inputs-file input))
    ;; create clojure namespace file
    (let [ns-file (io/file (str "./src/aoc_" year "/day_" day ".clj"))]
      (-> ns-file .getParentFile .mkdirs)
