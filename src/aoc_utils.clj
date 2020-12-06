@@ -25,9 +25,12 @@
      (start-day (-> now .getYear) (-> now .getDayOfMonth))))
   ([year day]
    ;; create input text file
-   (.createNewFile (io/file (str "./resources/inputs/aoc_" year "/day-" day ".txt")))
+   (let [inputs-file (io/file (str "./resources/inputs/aoc_" year "/day-" day ".txt"))]
+     (-> inputs-file .getParentFile .mkdirs)
+     (.createNewFile inputs-file))
    ;; create clojure namespace file
    (let [ns-file (io/file (str "./src/aoc_" year "/day_" day ".clj"))]
+     (-> ns-file .getParentFile .mkdirs)
      (when (.createNewFile ns-file)
        (-> (slurp-resource "dummy_ns.edn")
            (string/replace #"%>.+?<%" {"%>year<%" (str year)
