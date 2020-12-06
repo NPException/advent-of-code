@@ -1,6 +1,7 @@
 (ns aoc-2020.day-6
   (:require [clojure.string :as string]
-            [aoc-utils :as u]))
+            [aoc-utils :as u]
+            [clojure.set :as set]))
 
 ;; --- Day 6: Custom Customs --- https://adventofcode.com/2020/day/6
 
@@ -19,10 +20,19 @@
       count))
 
 
+;; Part 2 counter
+(defn count-every
+  [group]
+  (->> (string/split-lines group)
+       (map set)
+       (reduce set/intersection)
+       count))
+
+
 
 (comment
   ;; Part 1
   (apply + (map count-any groups))
   ;; Part 2
-
+  (apply + (map count-every groups))
   )
