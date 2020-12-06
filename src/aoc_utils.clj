@@ -1,6 +1,7 @@
 (ns aoc-utils
   (:require [clojure.java.io :as io]
-            [clojure.string :as string])
+            [clojure.string :as string]
+            [org.httpkit.client :as http])
   (:import [java.time LocalDateTime]))
 
 
