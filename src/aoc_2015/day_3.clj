@@ -1,7 +1,7 @@
 (ns aoc-2015.day-3
   (:require [aoc-utils :as u]))
 
-;; --- Day 3:  --- https://adventofcode.com/2015/day/3
+;; --- Day 3: Perfectly Spherical Houses in a Vacuum --- https://adventofcode.com/2015/day/3
 
 (def task-input
   (u/slurp-resource "inputs/aoc_2015/day-3.txt"))

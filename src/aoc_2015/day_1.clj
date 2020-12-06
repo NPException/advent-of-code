@@ -1,7 +1,7 @@
 (ns aoc-2015.day-1
   (:require [aoc-utils :as u]))
 
-;; --- Day 1:  --- https://adventofcode.com/2015/day/1
+;; --- Day 1: Not Quite Lisp --- https://adventofcode.com/2015/day/1
 
 (def task-input
   (u/slurp-resource "inputs/aoc_2015/day-1.txt"))

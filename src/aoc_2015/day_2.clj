@@ -2,7 +2,7 @@
   (:require [clojure.string :as string]
             [aoc-utils :as u]))
 
-;; --- Day 2:  --- https://adventofcode.com/2015/day/2
+;; --- Day 2: I Was Told There Would Be No Math --- https://adventofcode.com/2015/day/2
 
 (def task-input
   (u/slurp-resource "inputs/aoc_2015/day-2.txt"))
