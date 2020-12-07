@@ -57,6 +57,14 @@
           containing)))
 
 
+(defn count-bags-inside
+  [rules color]
+  (let [contained (rules color)]
+    (apply + (->> contained
+                  (map (fn [[sub-color n]]
+                         (+ n (* n (count-bags-inside rules sub-color)))))))))
+
+
 (comment
   ;; Part 1
   (-> task-input
@@ -65,5 +73,7 @@
       (bags-containing "shiny gold")
       count)
   ;; Part 2
-
+  (-> task-input
+      parse-rules
+      (count-bags-inside "shiny gold"))
   )
