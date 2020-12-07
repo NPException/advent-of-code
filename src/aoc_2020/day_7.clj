@@ -8,23 +8,14 @@
   (u/slurp-resource "inputs/aoc_2020/day-7.txt"))
 
 
-(defn parse-sub-rule
-  [sub-rule]
-  (some->> sub-rule
-           (re-matches #"(\d+) (.+?) bags?")
-           next
-           (apply (fn [n color]
-                    [color (u/parse-int n)]))))
-
-
 (defn parse-rule
   [rule-string]
-  (let [rule-string (subs rule-string 0 (dec (count rule-string)))
-        [color contained] (string/split rule-string #" bags contain ")
-        sub-bags (->> (string/split contained #", ")
-                      (map parse-sub-rule)
-                      (into {}))]
-    [color sub-bags]))
+  (let [rule (->> (re-seq #"(?:(.+?) bags contain)|(\d+) (.+?) bag" rule-string)
+                  (mapcat next)
+                  (remove nil?)
+                  (map #(or (u/parse-int %) %)))]
+    [(first rule)
+     (partition 2 (rest rule))]))
 
 
 (defn parse-rules
@@ -34,16 +25,17 @@
        (into {})))
 
 
+;; remove this stupid thing. Use Jezza's approach instead.
 (defn invert-rules
   "Returns a map of each color, mapped to a set of all bag colors in which it could be contained"
   [rules]
   (reduce
-    (fn [inverted [color contained]]
-      (if (empty? contained)
+    (fn [inverted [color contained-bags]]
+      (if (empty? contained-bags)
         inverted
         (apply assoc inverted
                (flatten
-                 (for [[sub-color] contained]
+                 (for [[_ sub-color] contained-bags]
                    [sub-color (conj (get inverted sub-color #{}) color)])))))
     {}
     rules))
@@ -61,18 +53,18 @@
   [rules color]
   (let [contained (rules color)]
     (apply + (->> contained
-                  (map (fn [[sub-color n]]
+                  (map (fn [[n sub-color]]
                          (+ n (* n (count-bags-inside rules sub-color)))))))))
 
 
 (comment
-  ;; Part 1
+  ;; Part 1 = 213
   (-> task-input
       parse-rules
       invert-rules
       (bags-containing "shiny gold")
       count)
-  ;; Part 2
+  ;; Part 2 = 38426
   (-> task-input
       parse-rules
       (count-bags-inside "shiny gold"))
