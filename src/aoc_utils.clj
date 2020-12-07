@@ -64,7 +64,8 @@
          input (:body @(http/get (str "https://adventofcode.com/" year "/day/" day "/input")
                                  {:headers {"cookie" (str "session=" (System/getenv "AOC_SESSION"))}}))]
      (-> inputs-file .getParentFile .mkdirs)
-     (spit inputs-file (string/trim-newline input)))
+     (spit inputs-file (string/trim-newline input))
+     (println "Downloaded input to" (.getPath inputs-file)))
    ;; create clojure namespace file
    (let [ns-file (io/file (str "./src/aoc_" year "/day_" day ".clj"))]
      (-> ns-file .getParentFile .mkdirs)
@@ -72,7 +73,8 @@
        (-> (slurp-resource "dummy_ns.edn")
            (string/replace #"%>.+?<%" {"%>year<%" (str year)
                                        "%>day<%"  (str day)})
-           (#(spit ns-file %)))))))
+           (#(spit ns-file %)))
+       (println "Created Clojure namespace in " (.getPath ns-file))))))
 
 (comment
   (start-day)
