@@ -29,15 +29,33 @@
        (not-any? #{"ab" "cd" "pq" "xy"})))
 
 
+;; Part 2 rules
+
+(defn non-overlapping-pairs?
+  [s]
+  (->> (partition 2 1 s)
+       (map #(apply str %))
+       (some #(->> (string/index-of s %)
+                   (+ 2)
+                   (string/index-of s %)))))
+
+(defn twin-letter-with-gap?
+  [s]
+  (->> (partition 3 1 s)
+       (some (fn [[x _ y]] (= x y)))))
+
 
 
 (comment
-  ;; Part 1
+  ;; Part 1 => 255
   (->> (string/split-lines task-input)
        (filter #(and (only-legal-pairs? %)
                      (twin-letter? %)
                      (three-vowels? %)))
        count)
-  ;; Part 2
-
+  ;; Part 2 => 55
+  (->> (string/split-lines task-input)
+       (filter #(and (non-overlapping-pairs? %)
+                     (twin-letter-with-gap? %)))
+       count)
   )
