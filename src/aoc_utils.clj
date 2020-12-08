@@ -51,6 +51,36 @@
        (apply concat)))
 
 
+;; predicate combiners
+
+(defn and-fn
+  "Returns a function that combines all given predicates via 'and'.
+  So it will only return true, if all predicates returned true for a given input."
+  [& preds]
+  (fn [& args]
+    (every? #(apply % args) preds)))
+
+(defn or-fn
+  "Returns a function that combines all given predicates via 'or'.
+  So it will return true only if at least one predicate returned true for a given input."
+  [& preds]
+  (fn [& args]
+    (boolean (some #(apply % args) preds))))
+
+(def not-fn
+  "Takes a predicate and inverts it. (just an alias for 'clojure.core/complement')"
+  complement)
+
+(defn if-fn
+  "Combines 3 predicates to a branching predicate, like an if-then-else"
+  [p-test p-then p-else]
+  (fn [& args]
+    (if (apply p-test args)
+      (apply p-then args)
+      (apply p-else args))))
+
+
+
 
 (defn start-day
   "Initializes a new namespace for the given day and downloads the input for the day.

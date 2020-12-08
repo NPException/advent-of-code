@@ -49,13 +49,10 @@
 (comment
   ;; Part 1 => 255
   (->> (string/split-lines task-input)
-       (filter #(and (only-legal-pairs? %)
-                     (twin-letter? %)
-                     (three-vowels? %)))
+       (filter (u/and-fn only-legal-pairs? twin-letter? three-vowels?))
        count)
   ;; Part 2 => 55
   (->> (string/split-lines task-input)
-       (filter #(and (non-overlapping-pairs? %)
-                     (twin-letter-with-gap? %)))
+       (filter (u/and-fn non-overlapping-pairs? twin-letter-with-gap?))
        count)
   )
