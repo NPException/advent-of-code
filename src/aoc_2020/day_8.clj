@@ -53,14 +53,12 @@
 
 (defn find-last-state
   [state-seq]
-  (reduce
-    (fn [prev state]
-      (cond
-        (nil? state) (reduced prev)
-        (infinite-loop? state) (reduced state)
-        :else state))
-    nil
-    state-seq))
+  (loop [prev nil
+         [state & remaining] state-seq]
+    (cond
+      (nil? state) prev
+      (infinite-loop? state) state
+      :else (recur state remaining))))
 
 
 (defn run-to-end
