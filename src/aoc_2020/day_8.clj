@@ -2,7 +2,7 @@
   (:require [clojure.string :as string]
             [aoc-utils :as u]))
 
-;; --- Day 8:  --- https://adventofcode.com/2020/day/8
+;; --- Day 8: Handheld Halting --- https://adventofcode.com/2020/day/8
 
 (def task-input
   (u/slurp-resource "inputs/aoc_2020/day-8.txt"))
