@@ -15,32 +15,34 @@
 ;; part 1 functions
 
 (defn invalid?
-  [[n prev-nums]]
+  [[n preamble]]
   (empty?
-    (for [x prev-nums
-          y prev-nums
+    (for [x preamble
+          y preamble
           :when (and (not= x y)
                      (= n (+ x y)))]
       :dummy)))
 
 
 (defn validation-groups
-  [numbers preamble]
-  (->> (partition (inc preamble) 1 numbers)
+  [numbers preamble-size]
+  (->> (partition (inc preamble-size) 1 numbers)
        (map (juxt last butlast))))
 
 
 ;; part 2 functions
 
-(defn find-consecutive-nums-adding-up-to
-  [numbers n]
-  (->> (range 2 (count numbers))
-       (map #(take % numbers))
-       (map #(vector % (apply + %)))
-       (drop-while #(< (second %) n))
-       (take 1)
-       (filter #(= (second %) n))
-       ffirst))
+(defn find-sum-group
+  [numbers target]
+  (loop [remaining (drop 2 numbers)
+         window (vec (take 2 numbers))]
+    (let [sum (apply + window)]
+      (cond
+        (= sum target) window
+        (< sum target) (recur (next remaining)
+                              (conj window (first remaining)))
+        (> sum target) (recur remaining
+                              (vec (rest window)))))))
 
 
 
@@ -50,9 +52,7 @@
        (filter invalid?)
        ffirst)
   ;; Part 2 => 4794981
-  (->> (loop [remaining-nums input-numbers]
-         (or (find-consecutive-nums-adding-up-to remaining-nums 32321523)
-             (recur (rest remaining-nums))))
+  (->> (find-sum-group input-numbers 32321523)
        (apply (juxt min max))
        (apply +))
   )
