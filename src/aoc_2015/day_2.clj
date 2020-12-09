@@ -10,7 +10,7 @@
 (def sizes
   (->> (string/split-lines task-input)
        (map #(string/split % #"x"))
-       (mapv #(mapv u/parse-int %))))
+       (mapv #(mapv u/parse-long %))))
 
 ;; part 1
 (defn extra-area
@@ -44,8 +44,8 @@
 
 
 (comment
-  ;; Part 1
+  ;; Part 1 => 1586300
   (apply + (map paper-needed sizes))
-  ;; Part 2
+  ;; Part 2 => 3737498
   (apply + (map ribbon-needed sizes))
   )

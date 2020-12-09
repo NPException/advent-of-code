@@ -34,16 +34,16 @@
 ;; validator for part 2
 
 (def field-rules
-  {"byr" #(when-let [year (u/parse-int %)]
+  {"byr" #(when-let [year (u/parse-long %)]
             (<= 1920 year 2002))
-   "iyr" #(when-let [year (u/parse-int %)]
+   "iyr" #(when-let [year (u/parse-long %)]
             (<= 2010 year 2020))
-   "eyr" #(when-let [year (u/parse-int %)]
+   "eyr" #(when-let [year (u/parse-long %)]
             (<= 2020 year 2030))
    "hgt" #(when-let [[_ height unit] (re-matches #"(\d{2,3})(in|cm)" %)]
             (if (= unit "cm")
-              (<= 150 (u/parse-int height) 193)
-              (<= 59 (u/parse-int height) 76)))
+              (<= 150 (u/parse-long height) 193)
+              (<= 59 (u/parse-long height) 76)))
    "hcl" #(re-matches #"#[0-9a-f]{6}" %)
    "ecl" #{"amb" "blu" "brn" "gry" "grn" "hzl" "oth"}
    "pid" #(re-matches #"\d{9}" %)})
@@ -57,8 +57,8 @@
 
 
 (comment
-  ;; Part 1
+  ;; Part 1 => 202
   (count-valid-passports task-input all-required-fields?)
-  ;; Part 2
+  ;; Part 2 => 137
   (count-valid-passports task-input field-data-valid?)
   )

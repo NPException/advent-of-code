@@ -16,11 +16,11 @@
   x)
 
 
-(defn parse-int
-  "Pares the given String to an integer. If it cannot be parsed, returns nil."
+(defn parse-long
+  "Parses the given String to a long. If it cannot be parsed, returns nil."
   [s]
   (try
-    (Integer/parseInt s)
+    (Long/parseLong s)
     (catch Exception _)))
 
 
