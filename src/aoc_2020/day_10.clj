@@ -38,11 +38,36 @@
        (apply *)))
 
 
+(defn split-on
+  [n diffs]
+  (->> diffs
+       (partition-by #(= n %))
+       (filter (comp #(not= n %) first))))
+
+
+(def tribonacci
+  (memoize
+    (fn [^long n]
+      (case n
+        0 0
+        1 0
+        2 1
+        (+' (tribonacci (- n 3))
+            (tribonacci (- n 2))
+            (tribonacci (- n 1)))))))
+
+
 (defn part-2
   [nums]
   (->> (calc-differences nums)
-       ;; TODO
-       ))
+       (split-on 3)
+       ;; I have no 2s in my difference sequence (apparently no one has),
+       ;; so I can just count each group of 1s and grab tribbonacci number for that count.
+       ;; (The tribonacci numbers directly match the number of permutations a group of 1s has.)
+       (map count)
+       (map #(+ 2 %))
+       (map tribonacci)
+       (apply *')))
 
 
 (comment
@@ -53,7 +78,7 @@
   ;; => 220
   (part-1 test-numbers-2)
 
-  ;; Part 2 =>
+  ;; Part 2 => 296196766695424
   (part-2 numbers)
   ;; => 8
   (part-2 test-numbers-1)
