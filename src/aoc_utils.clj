@@ -100,7 +100,7 @@
    (let [ns-file (io/file (str "./src/aoc_" year "/day_" day ".clj"))]
      (-> ns-file .getParentFile .mkdirs)
      (when (.createNewFile ns-file)
-       (-> (slurp-resource "dummy_ns.edn")
+       (-> (slurp-resource "template_ns.edn")
            (string/replace #"%>.+?<%" {"%>year<%" (str year)
                                        "%>day<%"  (str day)})
            (#(spit ns-file %)))

@@ -1,0 +1,32 @@
+(ns aoc-%>year<%.day-%>day<%
+  (:require [clojure.string :as string]
+            [aoc-utils :as u]))
+
+;; --- Day %>day<%:  --- https://adventofcode.com/%>year<%/day/%>day<%
+
+(def task-input (u/slurp-resource "inputs/aoc_%>year<%/day-%>day<%.txt"))
+
+(def test-input "")
+
+
+
+(defn part-1
+  [input]
+  )
+
+
+(defn part-2
+  [input]
+  )
+
+
+(comment
+  ;; Part 1
+  (part-1 test-input)
+  (part-1 task-input)
+
+  ;; Part 2
+  (part-2 test-input)
+  (part-2 task-input)
+
+  )
