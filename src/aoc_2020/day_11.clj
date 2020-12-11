@@ -17,7 +17,6 @@
 
 
 (defn parse-seats
-  ;; returns a map of seat coordinates to occupied state (initially false)
   [input]
   (->> input
        string/split-lines
