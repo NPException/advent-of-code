@@ -24,58 +24,38 @@
        (mapv vec)))
 
 
-(def neighbour-offsets
-  (vec
-    (for [y (range -1 2)
-          x (range -1 2)
-          :when (not= y x 0)]
-      [x y])))
-
-
-(defn count-neighbours
-  "Counts occupied seats adjacent to the given coordinates"
-  [seats x y]
-  (transduce
-    (map (fn [[ox oy]]
-           (if (= \# (get-in seats [(+ y oy) (+ x ox)]))
-             1
-             0)))
-    +
-    neighbour-offsets))
-
-
 (defn process-seat
-  [seats y x state]
+  [neigbour-counter leave-threshold seats y x state]
   (if (= state \.)
     state
-    (let [neighbours (count-neighbours seats x y)]
+    (let [neighbours (neigbour-counter seats x y)]
       (or (and (= state \L)
                (= neighbours 0)
                \#)
           (and (= state \#)
-               (>= neighbours 4)
+               (>= neighbours leave-threshold)
                \L)
           state))))
 
 
 (defn process-row
-  [seats y row]
+  [neigbour-counter leave-threshold seats y row]
   (into []
-        (map-indexed (partial process-seat seats y))
+        (map-indexed (partial process-seat neigbour-counter leave-threshold seats y))
         row))
 
 
 (defn process-seats
-  [seats]
+  [neigbour-counter leave-threshold seats]
   (into []
-        (map-indexed (partial process-row seats))
+        (map-indexed (partial process-row neigbour-counter leave-threshold seats))
         seats))
 
 
-(defn part-1
-  [input]
-  (->> (parse-seats input)
-       (iterate process-seats)
+(defn find-equilibrium-seats
+  [seats neighbour-counter leave-threshold]
+  (->> seats
+       (iterate (partial process-seats neighbour-counter leave-threshold))
        (partition 2 1)
        (take-while #(apply not= %))
        last
@@ -84,6 +64,35 @@
        (filter #(= % \#))
        count))
 
+
+
+;; part 1
+
+(def neighbour-offsets-p1
+  (vec
+    (for [y (range -1 2)
+          x (range -1 2)
+          :when (not= y x 0)]
+      [x y])))
+
+(defn count-neighbours-p1
+  "Counts occupied seats adjacent to the given coordinates"
+  [seats x y]
+  (transduce
+    (map (fn [[ox oy]]
+           (if (= \# (get-in seats [(+ y oy) (+ x ox)]))
+             1
+             0)))
+    +
+    neighbour-offsets-p1))
+
+(defn part-1
+  [input]
+  (find-equilibrium-seats (parse-seats input) count-neighbours-p1 4))
+
+
+
+;; part 2
 
 (defn part-2
   [input]
