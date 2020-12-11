@@ -9,13 +9,6 @@
 (def test-input "L.LL.LL.LL\nLLLLLLL.LL\nL.L.L..L..\nLLLL.LL.LL\nL.LL.LL.LL\nL.LLLLL.LL\n..L.L.....\nLLLLLLLLLL\nL.LLLLLL.L\nL.LLLLL.LL")
 
 
-;; for debugging
-(defn print-seats
-  [seats]
-  (doseq [row seats]
-    (println (apply str row))))
-
-
 (defn parse-seats
   [input]
   (->> input
@@ -24,10 +17,10 @@
 
 
 (defn process-seat
-  [neigbour-counter leave-threshold seats y x state]
+  [tracers leave-threshold seats y x state]
   (if (= state \.)
     state
-    (let [neighbours (neigbour-counter seats x y)]
+    (let [neighbours (transduce (map #(% seats x y)) + tracers)]
       (or (and (= state \L)
                (= neighbours 0)
                \#)
@@ -38,64 +31,72 @@
 
 
 (defn process-row
-  [neigbour-counter leave-threshold seats y row]
+  [tracers leave-threshold seats y row]
   (into []
-        (map-indexed (partial process-seat neigbour-counter leave-threshold seats y))
+        (map-indexed (partial process-seat tracers leave-threshold seats y))
         row))
 
 
 (defn process-seats
-  [neigbour-counter leave-threshold seats]
+  [tracers leave-threshold seats]
   (into []
-        (map-indexed (partial process-row neigbour-counter leave-threshold seats))
+        (map-indexed (partial process-row tracers leave-threshold seats))
         seats))
 
 
 (defn find-equilibrium-seats
-  [seats neighbour-counter leave-threshold]
-  (->> seats
-       (iterate (partial process-seats neighbour-counter leave-threshold))
-       (partition 2 1)
-       (take-while #(apply not= %))
-       last
-       second
-       (apply concat)
-       (filter #(= % \#))
-       count))
+  [seats build-tracer leave-threshold]
+  (let [tracers (vec (for [ox (range -1 2)
+                           oy (range -1 2)
+                           :when (not= ox oy 0)]
+                       (build-tracer ox oy)))]
+    (->> seats
+         (iterate (partial process-seats tracers leave-threshold))
+         (partition 2 1)
+         (take-while #(apply not= %))
+         last
+         second
+         (apply concat)
+         (filter #(= % \#))
+         count)))
 
 
 
 ;; part 1
 
-(def neighbour-offsets-p1
-  (vec
-    (for [y (range -1 2)
-          x (range -1 2)
-          :when (not= y x 0)]
-      [x y])))
-
-(defn count-neighbours-p1
-  "Counts occupied seats adjacent to the given coordinates"
-  [seats x y]
-  (transduce
-    (map (fn [[ox oy]]
-           (if (= \# (get-in seats [(+ y oy) (+ x ox)]))
-             1
-             0)))
-    +
-    neighbour-offsets-p1))
+(defn build-tracer-p1
+  "Returns a tracer function, which takes the seats and a coordinate,
+  then returns 1 if there is an occupied seat in the offset direction, else 0."
+  [ox oy]
+  (fn [seats x y]
+    (if (= \# (get-in seats [(+ y oy) (+ x ox)]))
+      1
+      0)))
 
 (defn part-1
   [input]
-  (find-equilibrium-seats (parse-seats input) count-neighbours-p1 4))
+  (find-equilibrium-seats (parse-seats input) build-tracer-p1 4))
 
 
 
 ;; part 2
 
+(defn build-tracer-p2
+  "Returns a tracer function, which takes the seats and a coordinate,
+  then returns 1 if there is an occupied seat in the offset direction, else 0."
+  [ox oy]
+  (fn [seats x y]
+    (loop [x (+ x ox)
+           y (+ y oy)]
+      (let [state (get-in seats [y x])]
+        (or (and (or (= state \L) (nil? state)) 0)
+            (and (= state \#) 1)
+            (recur (+ x ox) (+ y oy)))))))
+
+
 (defn part-2
   [input]
-  )
+  (find-equilibrium-seats (parse-seats input) build-tracer-p2 5))
 
 
 (comment
@@ -104,7 +105,7 @@
   (part-1 task-input)                                       ; => 2275
 
   ;; Part 2
-  (part-2 test-input)                                       ; =>
-  (part-2 task-input)                                       ; =>
+  (part-2 test-input)                                       ; => 26
+  (part-2 task-input)                                       ; => 2121
 
   )
