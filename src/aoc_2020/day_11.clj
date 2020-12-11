@@ -11,71 +11,64 @@
 
 ;; for debugging
 (defn print-seats
-  [seat-map]
-  (let [seat-map (into {} (map #(vector (key %) (or (and (val %) \#) \L))) seat-map)
-        w (->> seat-map keys (map first) (apply max) inc)
-        h (->> seat-map keys (map second) (apply max) inc)]
-    (dotimes [y h]
-      (dotimes [x w]
-        (print (seat-map [x y] \.)))
-      (println))))
+  [seats]
+  (doseq [row seats]
+    (println (apply str row))))
 
-
-(defn parse-seat-line
-  [y line]
-  (->> line
-       (map-indexed #(vector [%1 y] (= \. %2)))              ;; input contains no #, so we only need to distinguish between L and .
-       (filter (comp not second))))
 
 (defn parse-seats
   ;; returns a map of seat coordinates to occupied state (initially false)
   [input]
   (->> input
        string/split-lines
-       (map-indexed parse-seat-line)
-       (mapcat identity)
-       (into {})))
+       (mapv vec)))
 
 
 (def neighbour-offsets
   (vec
     (for [y (range -1 2)
           x (range -1 2)
-          :when (or (not= y 0)
-                    (not= x 0))]
+          :when (not= y x 0)]
       [x y])))
 
 
 (defn count-neighbours
   "Counts occupied seats adjacent to the given coordinates"
-  [seats [x y]]
-  (reduce
-    (fn [acc [ox oy]]
-      (if (seats [(+ x ox) (+ y oy)])
-        (inc acc)
-        acc))
-    0
+  [seats x y]
+  (transduce
+    (map (fn [[ox oy]]
+           (if (= \# (get-in seats [(+ y oy) (+ x ox)]))
+             1
+             0)))
+    +
     neighbour-offsets))
 
 
-(defn swap-seat-state?
-  [occupied? neighbours]
-  (or (and (not occupied?)
-           (= neighbours 0))
-      (and occupied?
-           (>= neighbours 4))))
-
-
 (defn process-seat
-  [seats [coords occupied? :as seat]]
-  (if (swap-seat-state? occupied? (count-neighbours seats coords))
-    [coords (not occupied?)]
-    seat))
+  [seats y x state]
+  (if (= state \.)
+    state
+    (let [neighbours (count-neighbours seats x y)]
+      (or (and (= state \L)
+               (= neighbours 0)
+               \#)
+          (and (= state \#)
+               (>= neighbours 4)
+               \L)
+          state))))
+
+
+(defn process-row
+  [seats y row]
+  (into []
+        (map-indexed (partial process-seat seats y))
+        row))
 
 
 (defn process-seats
   [seats]
-  (into {} (map #(process-seat seats %))
+  (into []
+        (map-indexed (partial process-row seats))
         seats))
 
 
@@ -87,8 +80,8 @@
        (take-while #(apply not= %))
        last
        second
-       vals
-       (filter true?)
+       (apply concat)
+       (filter #(= % \#))
        count))
 
 
