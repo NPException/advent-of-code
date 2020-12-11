@@ -6,5 +6,7 @@
   :dependencies [[org.clojure/clojure "1.10.1"]
                  [http-kit "2.5.0"]
                  [criterium "0.4.6"]]
+  :source-paths      ["src/clojure"]
+  :java-source-paths ["src/java"]
   :target-path "target/%s"
   :profiles {:uberjar {:aot :all}})
