@@ -1,7 +1,6 @@
 (ns aoc-2015.day-6
   (:require [clojure.string :as string]
-            [aoc-utils :as u])
-  (:import [java.util BitSet]))
+            [aoc-utils :as u]))
 
 ;; --- Day 6: Probably a Fire Hazard --- https://adventofcode.com/2015/day/6
 
@@ -19,39 +18,35 @@
        (mapv #(mapv try-long %))))
 
 
-(defn change-bits
-  [^BitSet bits
-   ^String action
-   ^long from
-   ^long to]
-  (case action
-    "turn on" (.set bits from to)
-    "turn off" (.clear bits from to)
-    "toggle" (.flip bits from to)))
+; part 1
 
-
-(defn change-lights
-  [grid [action x1 y1 x2 y2]]
-  (let [x-end (inc x2)]
-    (dotimes [oy (- (inc y2) y1)]
-      (change-bits (grid (+ y1 oy)) action x1 x-end))))
-
-
-;; grid is a vector of java BitSets (evil mutation in place)
-(defn create-grid
-  []
-  (into [] (repeatedly 1000 #(BitSet. 1000))))
+(defn toggle-lights
+  [data [action x1 y1 x2 y2]]
+  (letfn [(target? [i]
+            (and (<= x1 (mod i 1000) x2)
+                 (<= y1 (quot i 1000) y2)))]
+    (case action
+      "turn on" (into []
+                      (map-indexed #(if (target? %1) true %2))
+                      data)
+      "turn off" (into []
+                       (map-indexed #(if (target? %1) false %2))
+                       data)
+      "toggle" (into []
+                     (map-indexed #(if (target? %1) (not %2) %2))
+                     data))))
 
 
 (defn part-1
   [input]
-  (let [grid (create-grid)]
-    (doseq [ins (parse-instructions input)]
-      (change-lights grid ins))
-    (->> grid
-         (map (fn [^BitSet bitset]
-                (.cardinality bitset)))
-         (apply +))))
+  (let [start-data (vec (repeat (* 1000 1000) false))
+        final-data (reduce
+                     toggle-lights
+                     start-data
+                     (parse-instructions input))]
+    (->> final-data
+         (filter true?)
+         count)))
 
 
 (defn part-2
