@@ -8,14 +8,11 @@
 
 (def test-input "F10\nN3\nF7\nR90\nF11")
 
-
+;; takes ~ 160 µs with the regular task-input
 (defn parse-instructions
   [input]
   (->> (string/split-lines input)
-       (into [] (comp
-                  (map #(re-matches #"([NSEWLRF])(\d+)" %))
-                  (map (fn [[_ op n]]
-                         [(keyword op) (u/parse-long n)]))))))
+       (into [] (map #(vector (first %) (u/parse-long (subs % 1)))))))
 
 
 (defn distance-travelled
@@ -35,32 +32,26 @@
 
 (defmulti execute-command (fn [_ferry [op _n]] op))
 
-(defmethod execute-command :N [ferry [_ n]]
+(defmethod execute-command \N [ferry [_ n]]
   (u/update! ferry :N + n))
 
-(defmethod execute-command :S [ferry [_ n]]
+(defmethod execute-command \S [ferry [_ n]]
   (u/update! ferry :N - n))
 
-(defmethod execute-command :E [ferry [_ n]]
+(defmethod execute-command \E [ferry [_ n]]
   (u/update! ferry :E + n))
 
-(defmethod execute-command :W [ferry [_ n]]
+(defmethod execute-command \W [ferry [_ n]]
   (u/update! ferry :E - n))
 
-(defn turn
-  [heading +- degrees]
-  (-> heading
-      (+- degrees)
-      (mod 360)))
+(defmethod execute-command \L [ferry [_ deg]]
+  (execute-command ferry [\R (- 360 deg)]))
 
-(defmethod execute-command :L [ferry [_ n]]
-  (u/update! ferry :heading turn - n))
+(defmethod execute-command \R [ferry [_ deg]]
+  (u/update! ferry :heading #(-> % (+ deg) (mod 360))))
 
-(defmethod execute-command :R [ferry [_ n]]
-  (u/update! ferry :heading turn + n))
-
-(defmethod execute-command :F [ferry [_ n]]
-  (let [op ({0 :N 90 :E 180 :S 270 :W} (:heading ferry))]
+(defmethod execute-command \F [ferry [_ n]]
+  (let [op ({0 \N, 90 \E, 180 \S, 270 \W} (:heading ferry))]
     (execute-command ferry [op n])))
 
 
