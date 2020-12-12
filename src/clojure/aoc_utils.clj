@@ -97,7 +97,7 @@
      (spit inputs-file (string/trim-newline input))
      (println "Downloaded input to" (.getPath inputs-file)))
    ;; create clojure namespace file
-   (let [ns-file (io/file (str "./src/aoc_" year "/day_" day ".clj"))]
+   (let [ns-file (io/file (str "./src/clojure/aoc_" year "/day_" day ".clj"))]
      (-> ns-file .getParentFile .mkdirs)
      (when (.createNewFile ns-file)
        (-> (slurp-resource "template_ns.edn")
