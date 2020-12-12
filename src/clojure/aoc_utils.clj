@@ -24,6 +24,11 @@
     (catch Exception _)))
 
 
+(defn abs
+  [x]
+  (if (< x 0) (- x) x))
+
+
 (def ^:private hex-lookup
   (let [hex-chars [\0 \1 \2 \3 \4 \5 \6 \7 \8 \9 \a \b \c \d \e \f]]
     (->> hex-chars
@@ -49,6 +54,20 @@
   (->> (partition-all n col)
        (pmap #(mapv f %))
        (apply concat)))
+
+
+(defn update!
+  "Same as 'update' but for transient maps"
+  ([m k f]
+   (assoc! m k (f (get m k))))
+  ([m k f x]
+   (assoc! m k (f (get m k) x)))
+  ([m k f x y]
+   (assoc! m k (f (get m k) x y)))
+  ([m k f x y z]
+   (assoc! m k (f (get m k) x y z)))
+  ([m k f x y z & more]
+   (assoc! m k (apply f (get m k) x y z more))))
 
 
 ;; predicate combiners
