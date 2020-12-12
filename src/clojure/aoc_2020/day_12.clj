@@ -65,7 +65,6 @@
                execute-command)))
 
 
-
 ; part 2
 
 (defmulti execute-waypoint-command (fn [_ferry [op _n]] op))
