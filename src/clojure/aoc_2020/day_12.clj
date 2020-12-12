@@ -68,9 +68,49 @@
 
 ; part 2
 
+(defmulti execute-waypoint-command (fn [_ferry [op _n]] op))
+
+(defmethod execute-waypoint-command \N [ferry [_ n]]
+  (u/update! ferry :wp-N + n))
+
+(defmethod execute-waypoint-command \S [ferry [_ n]]
+  (u/update! ferry :wp-N - n))
+
+(defmethod execute-waypoint-command \E [ferry [_ n]]
+  (u/update! ferry :wp-E + n))
+
+(defmethod execute-waypoint-command \W [ferry [_ n]]
+  (u/update! ferry :wp-E - n))
+
+(defmethod execute-waypoint-command \L [ferry [_ deg]]
+  (execute-waypoint-command ferry [\R (- 360 deg)]))
+
+(defmethod execute-waypoint-command \R [{:keys [wp-N wp-E] :as ferry} [_ deg]]
+  (-> ferry
+      (assoc! :wp-N (case (int deg)
+                      90 (- wp-E)
+                      180 (- wp-N)
+                      270 wp-E))
+      (assoc! :wp-E (case (int deg)
+                      90 wp-N
+                      180 (- wp-E)
+                      270 (- wp-N)))))
+
+(defmethod execute-waypoint-command \F [{:keys [wp-N wp-E] :as ferry} [_ n]]
+  (-> ferry
+      (u/update! :N + (* n wp-N))
+      (u/update! :E + (* n wp-E))))
+
+
 (defn part-2
   [input]
-  )
+  (distance-travelled
+    (run-ferry input
+               {:N    0
+                :E    0
+                :wp-N 1
+                :wp-E 10}
+               execute-waypoint-command)))
 
 
 (comment
@@ -79,7 +119,7 @@
   (part-1 task-input)                                       ; => 562
 
   ;; Part 2
-  (part-2 test-input)
-  (part-2 task-input)
+  (part-2 test-input)                                       ; => 286
+  (part-2 task-input)                                       ; => 101860
 
   )
