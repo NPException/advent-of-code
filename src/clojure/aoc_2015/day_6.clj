@@ -47,9 +47,31 @@
          (apply +))))
 
 
+;; part 2
+(defn adjust-lights
+  [data [action x1 y1 x2 y2]]
+  (letfn [(target? [i]
+            (and (<= x1 (mod i 1000) x2)
+                 (<= y1 (quot i 1000) y2)))]
+    (case action
+      "turn on" (into []
+                      (map-indexed #(if (target? %1) (inc %2) %2))
+                      data)
+      "turn off" (into []
+                       (map-indexed #(if (and (target? %1) (> %2 0)) (dec %2) %2))
+                       data)
+      "toggle" (into []
+                     (map-indexed #(if (target? %1) (+ %2 2) %2))
+                     data))))
+
 (defn part-2
   [input]
-  )
+  (let [start-data (vec (repeat (* 1000 1000) 0))
+        final-data (reduce
+                     adjust-lights
+                     start-data
+                     (parse-instructions input))]
+    (reduce + final-data)))
 
 
 (comment
@@ -57,6 +79,6 @@
   (part-1 task-input)                                       ; => 400410
 
   ;; Part 2
-  (part-2 task-input)
+  (part-2 task-input)                                       ; => 15343601
 
   )
