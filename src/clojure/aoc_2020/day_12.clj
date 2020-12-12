@@ -9,11 +9,6 @@
 (def test-input "F10\nN3\nF7\nR90\nF11")
 
 
-(def ferry {:N       0
-            :E       0
-            :heading 90})
-
-
 (defn parse-instructions
   [input]
   (->> (string/split-lines input)
@@ -22,6 +17,21 @@
                   (map (fn [[_ op n]]
                          [(keyword op) (u/parse-long n)]))))))
 
+
+(defn distance-travelled
+  [{:keys [N E] :as _ferry}]
+  (+ (u/abs N) (u/abs E)))
+
+(defn run-ferry
+  [input ferry execute-fn]
+  (->> (reduce
+         execute-fn
+         (transient ferry)
+         (parse-instructions input))
+       persistent!))
+
+
+; part 1
 
 (defmulti execute-command (fn [_ferry [op _n]] op))
 
@@ -54,22 +64,18 @@
     (execute-command ferry [op n])))
 
 
-(defn distance-travelled
-  [{:keys [N E] :as _ferry}]
-  (+ (u/abs N) (u/abs E)))
-
-
-
 (defn part-1
   [input]
-  (->> (reduce
-         execute-command
-         (transient ferry)
-         (parse-instructions input))
-       persistent!
-       distance-travelled))
+  (distance-travelled
+    (run-ferry input
+               {:N       0
+                :E       0
+                :heading 90}
+               execute-command)))
 
 
+
+; part 2
 
 (defn part-2
   [input]
