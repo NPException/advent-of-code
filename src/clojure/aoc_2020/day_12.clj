@@ -23,18 +23,18 @@
                          [(keyword op) (u/parse-long n)]))))))
 
 
-(defmulti execute-command (fn [_ferry op _n] op))
+(defmulti execute-command (fn [_ferry [op _n]] op))
 
-(defmethod execute-command :N [ferry _ n]
+(defmethod execute-command :N [ferry [_ n]]
   (u/update! ferry :N + n))
 
-(defmethod execute-command :S [ferry _ n]
+(defmethod execute-command :S [ferry [_ n]]
   (u/update! ferry :N - n))
 
-(defmethod execute-command :E [ferry _ n]
+(defmethod execute-command :E [ferry [_ n]]
   (u/update! ferry :E + n))
 
-(defmethod execute-command :W [ferry _ n]
+(defmethod execute-command :W [ferry [_ n]]
   (u/update! ferry :E - n))
 
 (defn turn
@@ -43,15 +43,15 @@
       (+- degrees)
       (mod 360)))
 
-(defmethod execute-command :L [ferry _ n]
+(defmethod execute-command :L [ferry [_ n]]
   (u/update! ferry :heading turn - n))
 
-(defmethod execute-command :R [ferry _ n]
+(defmethod execute-command :R [ferry [_ n]]
   (u/update! ferry :heading turn + n))
 
-(defmethod execute-command :F [ferry _ n]
+(defmethod execute-command :F [ferry [_ n]]
   (let [op ({0 :N 90 :E 180 :S 270 :W} (:heading ferry))]
-    (execute-command ferry op n)))
+    (execute-command ferry [op n])))
 
 
 (defn distance-travelled
@@ -63,7 +63,7 @@
 (defn part-1
   [input]
   (->> (reduce
-         #(apply execute-command %1 %2)
+         execute-command
          (transient ferry)
          (parse-instructions input))
        persistent!
