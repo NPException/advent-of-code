@@ -9,12 +9,6 @@
 (def test-input "L.LL.LL.LL\nLLLLLLL.LL\nL.L.L..L..\nLLLL.LL.LL\nL.LL.LL.LL\nL.LLLLL.LL\n..L.L.....\nLLLLLLLLLL\nL.LLLLLL.L\nL.LLLLL.LL")
 
 
-(defn parse-seats
-  [input]
-  (->> input
-       string/split-lines
-       (mapv vec)))
-
 
 (defn process-seat
   [tracers leave-threshold seats y x state]
@@ -75,7 +69,7 @@
 
 (defn part-1
   [input]
-  (find-equilibrium-seats (parse-seats input) build-tracer-p1 4))
+  (find-equilibrium-seats (string/split-lines input) build-tracer-p1 4))
 
 
 
@@ -96,7 +90,7 @@
 
 (defn part-2
   [input]
-  (find-equilibrium-seats (parse-seats input) build-tracer-p2 5))
+  (find-equilibrium-seats (string/split-lines input) build-tracer-p2 5))
 
 
 (comment
