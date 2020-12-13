@@ -28,6 +28,10 @@
   [x]
   (if (< x 0) (- x) x))
 
+(defn absl
+  ^long [^long x]
+  (if (< x 0) (- x) x))
+
 
 (def ^:private hex-lookup
   (let [hex-chars [\0 \1 \2 \3 \4 \5 \6 \7 \8 \9 \a \b \c \d \e \f]]
