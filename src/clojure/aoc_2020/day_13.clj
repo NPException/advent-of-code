@@ -34,23 +34,21 @@
 
 ;; part 2
 
+;; note: this algorithm relies on the fact that all input ids are prime
+(defn advance-matching-time
+  [[time step] [index id]]
+  [(some #(and (= 0 (mod (+ % index) id)) %)
+         (iterate #(+ % step) time))
+   (* step id)])
+
 (defn part-2
   [input]
-  (let [buses (->> (parse-input input)
-                   second
-                   (map-indexed vector)
-                   (remove (comp nil? second)))]
-    (loop [time 0
-           step 1
-           [[index id] & remaining] buses]
-      (if (nil? index)
-        time
-        (recur (->> (iterate #(+ % step) time)
-                    (filter #(= 0 (mod (+ % index) id)))
-                    first
-                    long)
-               (long (* step id))
-               remaining)))))
+  (->> (parse-input input)
+       second
+       (map-indexed vector)
+       (remove (comp nil? second))
+       (reduce advance-matching-time [0 1])
+       first))
 
 
 (comment
