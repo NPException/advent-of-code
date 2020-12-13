@@ -34,61 +34,23 @@
 
 ;; part 2
 
-;; chinese remainder code nicked from rosetta code and adjusted
-;; Jezza only found this through a Wikipedia rabbit hole.
-;; How on earth are we supposed to know this stuff?
-
-(defn extended-gcd
-  "The extended Euclidean algorithm
-  Returns a list containing the GCD and the Bézout coefficients
-  corresponding to the inputs. "
-  [a b]
-  (cond (zero? a) [(u/absl b) 0 1]
-        (zero? b) [(u/absl a) 1 0]
-        :else (loop [s 0
-                     s0 1
-                     t 1
-                     t0 0
-                     r (u/absl b)
-                     r0 (u/absl a)]
-                (if (zero? r)
-                  [r0 s0 t0]
-                  (let [q (quot r0 r)]
-                    (recur (- s0 (* q s)) s
-                           (- t0 (* q t)) t
-                           (- r0 (* q r)) r))))))
-
-(defn chinese_remainder
-  "Main routine to return the chinese remainder "
-  [a n]
-  (let [prod (apply * n)
-        reducer (fn [sum [n_i a_i]]
-                  (let [p (quot prod n_i)
-                        egcd (extended-gcd p n_i)
-                        inv_p (second egcd)]
-                    (+ sum (* a_i inv_p p))))
-        sum-prod (reduce reducer 0 (map vector n a))]
-    (mod sum-prod prod)))
-
-
-(defn parse-buses
-  [input]
-  (->> (parse-input input)
-       second
-       (map-indexed vector)
-       (remove (comp nil? second))))
-
-;; probably relevant note on part 2: all bus ids are prime
 (defn part-2
   [input]
-  (->> (parse-buses input)
-       (map (fn [[i id]]
-              [(- id i) id]))
-       (reduce
-         (fn [[as ns] [a n]]
-           [(conj as a) (conj ns n)])
-         [[] []])
-       (apply chinese_remainder)))
+  (let [buses (->> (parse-input input)
+                   second
+                   (map-indexed vector)
+                   (remove (comp nil? second)))]
+    (loop [time 0
+           step 1
+           [[index id] & remaining] buses]
+      (if (nil? index)
+        time
+        (recur (->> (iterate #(+ % step) time)
+                    (filter #(= 0 (mod (+ % index) id)))
+                    first
+                    long)
+               (long (* step id))
+               remaining)))))
 
 
 (comment
