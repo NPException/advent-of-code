@@ -18,14 +18,17 @@
 
 (defn parse-long
   "Parses the given String to a long. If it cannot be parsed, returns nil."
-  ([s]
-   (try
-     (Long/parseLong s)
-     (catch Exception _)))
-  ([s radix]
-   (try
-     (Long/parseLong s radix)
-     (catch Exception _))))
+  [s]
+  (try
+    (Long/parseLong s)
+    (catch Exception _)))
+
+
+(defn parse-binary
+  [s]
+  (try
+    (Long/parseLong s 2)
+    (catch Exception _)))
 
 
 (defn abs
