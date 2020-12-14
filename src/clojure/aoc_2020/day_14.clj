@@ -97,8 +97,7 @@
       (->> float-mask-ops
            (reduce
              (fn [^StringBuilder sb [i c]]
-               (.setCharAt sb i c)
-               sb)
+               (doto sb (.setCharAt i c)))
              (StringBuilder. bits-string))
            str
            u/parse-binary))))
