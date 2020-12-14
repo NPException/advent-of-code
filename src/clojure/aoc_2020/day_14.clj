@@ -73,36 +73,44 @@
 
 ;; part-2
 
+(defn compute-float-masks
+  [floaty-bits]
+  (for [n (range (u/pow 2 (count floaty-bits)))]
+    (persistent!
+      (reduce-kv
+        (fn [mask-ops float-index bit-index]
+          (if (-> (bit-shift-left 1 float-index)
+                  (bit-and n)
+                  (> 0))
+            (conj! mask-ops [bit-index \1])
+            (conj! mask-ops [bit-index \0])))
+        (transient [])
+        floaty-bits))))
+
+
 (defn decode-addresses
-  [{:keys [mask-1 floaty-bits floaty-permutations]} address]
-  (let [binary-address (Long/toBinaryString (bit-or mask-1 address))
-        address-bits (-> (repeat (- 36 (count binary-address)) \0)
-                         (concat binary-address)
-                         vec)]
-    (for [n (range floaty-permutations)]
-      (->> floaty-bits
-           (reduce-kv
-             (fn [bin-vec float-index bit-index]
-               (if (-> (bit-shift-left 1 float-index)
-                       (bit-and n)
-                       (> 0))
-                 (assoc! bin-vec bit-index \1)
-                 (assoc! bin-vec bit-index \0)))
-             (transient address-bits))
-           persistent!
-           string/join
+  [{:keys [mask-1 float-masks]} address]
+  (let [bits-sb (StringBuilder. "000000000000000000000000000000000000")
+        binary-address (Long/toBinaryString (bit-or mask-1 address))
+        bits-string (str (.replace bits-sb (- 36 (count binary-address)) 36 binary-address))]
+    (for [float-mask-ops float-masks]
+      (->> float-mask-ops
+           (reduce
+             (fn [^StringBuilder sb [i c]]
+               (.setCharAt sb i c)
+               sb)
+             (StringBuilder. bits-string))
+           str
            u/parse-binary))))
 
 
 (defmulti step-program-2 (fn [_ [op _ _]] op))
 
 (defmethod step-program-2 :mask
-  [vm [_ mask-1 mask-0 floaty-bits]]
+  [vm [_ mask-1 _ floaty-bits]]
   (-> vm
       (assoc :mask-1 mask-1)
-      (assoc :mask-0 mask-0)
-      (assoc :floaty-bits floaty-bits)
-      (assoc :floaty-permutations (apply * (repeat (count floaty-bits) 2)))))
+      (assoc :float-masks (compute-float-masks floaty-bits))))
 
 (defmethod step-program-2 :mem
   [vm [_ address value]]

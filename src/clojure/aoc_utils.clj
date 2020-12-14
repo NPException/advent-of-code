@@ -31,6 +31,15 @@
     (catch Exception _)))
 
 
+(defn pow
+  [^long a ^long b]
+  (loop [r 1
+         n b]
+    (if (= n 0)
+      r
+      (recur (* r a) (dec n)))))
+
+
 (defn abs
   [x]
   (if (< x 0) (- x) x))
