@@ -9,29 +9,34 @@
 (def test-input "0,3,6")
 
 
+(defn build-iteration-seed
+  [seed-nums]
+  [(last seed-nums)
+   (count seed-nums)
+   (->> (map-indexed #(vector %2 %1) seed-nums)
+        (into {})
+        transient)])
+
+(defn calculate-next-number
+  [[prev index seen]]
+  (let [prev-index (dec index)]
+    [(- prev-index (seen prev prev-index))
+     (inc index)
+     (assoc! seen prev prev-index)]))
+
 (defn gen-numbers
   [seed-nums]
-  (let [seed-map (->> seed-nums
-                      (map-indexed #(vector %2 [%1 %1]))
-                      (into {})
-                      transient)]
-    (->> [(last seed-nums) (count seed-nums) seed-map]
-         (iterate
-           (fn [[prev index seen]]
-             (let [num (apply - (seen prev))
-                   [old-num-index] (or (seen num) [index])]
-               [num
-                (inc index)
-                (assoc! seen num [index old-num-index])])))
-         (drop 1)
-         (map first)
-         (concat seed-nums))))
+  (->> (build-iteration-seed seed-nums)
+       (iterate calculate-next-number)
+       (drop 1)
+       (map first)
+       (concat seed-nums)))
 
 
 (defn find-spoken-number
   [input n]
-  (->> (str \[ input \])
-       read-string
+  (->> (string/split input #",")
+       (map u/parse-long)
        gen-numbers
        (take n)
        last))
