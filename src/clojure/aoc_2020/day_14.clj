@@ -2,7 +2,7 @@
   (:require [clojure.string :as string]
             [aoc-utils :as u]))
 
-;; --- Day 14:  --- https://adventofcode.com/2020/day/14
+;; --- Day 14: Docking Data --- https://adventofcode.com/2020/day/14
 
 (def task-input (u/slurp-resource "inputs/aoc_2020/day-14.txt"))
 
