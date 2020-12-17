@@ -2,7 +2,7 @@
   (:require [clojure.string :as string]
             [aoc-utils :as u]))
 
-;; --- Day 17:  --- https://adventofcode.com/2020/day/17
+;; --- Day 17: Conway Cubes --- https://adventofcode.com/2020/day/17
 
 (def task-input (u/slurp-resource "inputs/aoc_2020/day-17.txt"))
 
@@ -10,28 +10,20 @@
 
 
 (defn parse-grid-line
-  [y line]
+  [additional-coordinates y line]
   (->> line
        (map-indexed vector)
        (filter #(= \# (second %)))
        (map (fn [[x _]]
-              [x y 0]))))
+              (apply vector x y additional-coordinates)))))
 
 (defn parse-grid
   "returns a set of coordinates of active cubes"
-  [input]
+  [input offsets]
   (->> (string/split-lines input)
-       (map-indexed parse-grid-line)
+       (map-indexed (partial parse-grid-line (->> offsets first (drop 2))))
        (mapcat identity)
        (into #{})))
-
-
-(def offsets
-  (vec (for [x (range -1 2)
-             y (range -1 2)
-             z (range -1 2)
-             :when (not= 0 x y z)]
-         [x y z])))
 
 
 (defn safe-add
@@ -40,17 +32,18 @@
 
 
 (defn process-active
-  [grid [new-grid seen-inactive-neigbours] cube-coordinate]
-  (let [inactive-neigbours (->> offsets
+  [offsets grid [new-grid seen-inactive-neighbours] cube-coordinate]
+  (let [inactive-neighbours (->> offsets
                                 (map #(mapv + % cube-coordinate)) ;; get absolute coordinates of neigbours
-                                (filter (complement grid)))]
-    [(if (<= 23 (count inactive-neigbours) 24)              ;; same as (<= 2 (- 26 (count inactive-neighbours)) 3)
+                                (filter (complement grid)))
+        active-neighbour-count (- (count offsets) (count inactive-neighbours))]
+    [(if (<= 2 active-neighbour-count 3)
        new-grid
        (disj new-grid cube-coordinate))
      (reduce
        #(update %1 %2 safe-add 1)
-       seen-inactive-neigbours
-       inactive-neigbours)]))
+       seen-inactive-neighbours
+       inactive-neighbours)]))
 
 
 (defn process-inactive
@@ -61,26 +54,52 @@
 
 
 (defn cycle-grid
-  [grid]
+  [offsets grid]
   (->> grid
        (reduce
-         (partial process-active grid)
+         (partial process-active offsets grid)
          [grid {}])
        (apply reduce process-inactive)))
 
 
-(defn part-1
-  [input]
-  (->> (parse-grid input)
-       (iterate cycle-grid)
+(defn find-solution
+  [input offsets]
+  (->> (parse-grid input offsets)
+       (iterate (partial cycle-grid offsets))
        (take 7)
        last
        count))
 
 
+;; part 1
+
+(def offsets-3d
+  (vec (for [x (range -1 2)
+             y (range -1 2)
+             z (range -1 2)
+             :when (not= 0 x y z)]
+         [x y z])))
+
+
+(defn part-1
+  [input]
+  (find-solution input offsets-3d))
+
+
+;; part 2
+
+(def offsets-4d
+  (vec (for [x (range -1 2)
+             y (range -1 2)
+             z (range -1 2)
+             w (range -1 2)
+             :when (not= 0 x y z w)]
+         [x y z w])))
+
+
 (defn part-2
   [input]
-  )
+  (find-solution input offsets-4d))
 
 
 (comment
@@ -89,7 +108,7 @@
   (part-1 task-input)                                       ; => 237
 
   ;; Part 2
-  (part-2 test-input)                                       ; =>
-  (part-2 task-input)                                       ; =>
+  (part-2 test-input)                                       ; => 848
+  (part-2 task-input)                                       ; => 2448
 
   )
