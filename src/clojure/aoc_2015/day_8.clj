@@ -6,6 +6,14 @@
 
 (def task-input (u/slurp-resource "inputs/aoc_2015/day-8.txt"))
 
+(defn solve
+  [input count-a count-b]
+  (->> (string/split-lines input)
+       (map (juxt count-a count-b))
+       (map (partial apply -))
+       (apply +)))
+
+;; part 1
 
 (defn char-from-hex
   [h1 h2]
@@ -24,15 +32,21 @@
 
 (defn part-1
   [input]
-  (->> (string/split-lines input)
-       (map (juxt count (comp count un-escape)))
-       (map (partial apply -))
-       (apply +)))
+  (solve input count (comp count un-escape)))
+
+
+;; part 2
+
+(defn escape
+  [line]
+  (str \"
+       (apply str (map #(case % \\ "\\\\", \" "\\\"", %) line))
+       \"))
 
 
 (defn part-2
   [input]
-  )
+  (solve input (comp count escape) count))
 
 
 (comment
@@ -40,6 +54,6 @@
   (part-1 task-input)                                       ; => 1350
 
   ;; Part 2
-  (part-2 task-input)                                       ; =>
+  (part-2 task-input)                                       ; => 2085
 
   )
