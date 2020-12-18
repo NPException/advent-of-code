@@ -7,14 +7,14 @@
 (def task-input (u/slurp-resource "inputs/aoc_2020/day-18.txt"))
 
 
-(defn infix
+(defn infix->prefix
   [prio [a op b & [next-op :as remaining]]]
   (cond
     ;; only three elements
     (nil? remaining)
     (list op
-          (if (list? a) (infix prio a) a)
-          (if (list? b) (infix prio b) b))
+          (if (list? a) (infix->prefix prio a) a)
+          (if (list? b) (infix->prefix prio b) b))
 
     ;; first operator takes precedence
     (>= (prio op) (prio next-op))
@@ -30,7 +30,7 @@
   (->> (string/split-lines input)
        (map #(str "(" % ")"))
        (map read-string)
-       (map (partial infix precedences))
+       (map (partial infix->prefix precedences))
        (map eval)
        (apply +)))
 
