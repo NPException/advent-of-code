@@ -22,7 +22,7 @@
 
     ;; second operator takes precedence
     :else
-    (recur prio [a op (conj remaining b)])))
+    (recur prio [a op (cons b remaining)])))
 
 
 (defn solve
