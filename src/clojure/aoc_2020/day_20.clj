@@ -32,12 +32,12 @@
   [{:keys [grid orientation]} x y]
   (let [end-index (dec (count grid))]
     (case orientation
-      :BASE (get-in grid [y x])
-      :R90 (get-in grid [(- end-index x) y])
-      :R180 (get-in grid [(- end-index y) (- end-index x)])
-      :R270 (get-in grid [x (- end-index y)])
-      :FLIP_H (get-in grid [y (- end-index x)])
-      :FLIP_V (get-in grid [(- end-index y) x])
+      :BASE        (get-in grid [y x])
+      :R90         (get-in grid [(- end-index x) y])
+      :R180        (get-in grid [(- end-index y) (- end-index x)])
+      :R270        (get-in grid [x (- end-index y)])
+      :FLIP_H      (get-in grid [y (- end-index x)])
+      :FLIP_V      (get-in grid [(- end-index y) x])
       :FLIP_DIAG_1 (get-in grid [(- end-index x) (- end-index y)])
       :FLIP_DIAG_2 (get-in grid [x y]))))
 
