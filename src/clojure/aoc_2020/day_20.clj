@@ -118,6 +118,7 @@
          (mapcat #(map (partial assoc % :orientation) orientations))
          (filter #(or (= corner-right (get-edge % left-edge))
                       (= corner-bottom (get-edge % top-edge))))
+         ;; ensure that 2 tiles matched
          second
          some?)))
 
