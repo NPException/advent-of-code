@@ -9,63 +9,77 @@
 (def test-input "389125467")
 
 
+(defn parse-input
+  [input]
+  (->> input
+       (map str)
+       (map u/parse-long)))
+
+
 (defn dec-cup
-  ([c]
-   (let [i (dec (int c))]
-     (if (< i 49) \9 (char i))))
-  ([c picked-set]
-   (loop [c (dec-cup c)]
+  ([max-num c]
+   (let [i (dec c)]
+     (if (< i 1) max-num i)))
+  ([max-num c picked-set]
+   (loop [c (dec-cup max-num c)]
      (if (picked-set c)
-       (recur (dec-cup c))
+       (recur (dec-cup max-num c))
        c))))
 
 
 (defn move
-  [[current cups]]
+  [max-num [current cups]]
   (let [cups (concat cups cups)
         picked (->> cups
                     (drop-while #(not= % current))
                     (drop 1)
                     (take 3))
         picked-set (set picked)
-        destination (dec-cup current picked-set)
+        destination (dec-cup max-num current picked-set)
         new-cups (->> cups
                       (remove picked-set)
                       (drop-while #(not= % destination))
                       (drop 1)
                       (concat picked)
-                      (take 9))
+                      (take max-num))
         next-cup (->> new-cups
                       (drop-while #(not= % current))
                       second)]
-    [next-cup new-cups]))
+    [next-cup (vec new-cups)]))
 
 
 (defn make-moves
-  [input]
-  (->> [(first input) input]
-       (iterate move)
-       (drop 100)
+  [max-num nums]
+  (->> [(first nums) nums]
+       (iterate #(move max-num %))
+       (drop (* 10 (inc max-num)))
        first
        second))
 
 (defn after-1
   [nums]
   (->> (concat nums nums)
-       (drop-while #(not= \1 %))
+       (drop-while #(not= 1 %))
        (drop 1)
-       (take 8)
-       string/join))
+       (take 8)))
 
 
 (defn part-1
   [input]
-  (after-1 (make-moves input)))
+  (->> (parse-input input)
+       (make-moves 9)
+       after-1
+       string/join))
 
 
 (defn part-2
   [input]
-  )
+  (->> (parse-input input)
+       (#(concat % (range 10 1000001)))
+       (make-moves 1000000)
+       after-1
+       (take 2)
+       (apply *)))
 
 
 (comment
@@ -74,7 +88,7 @@
   (part-1 task-input)                                       ; => 45798623
 
   ;; Part 2
-  (part-2 test-input)                                       ; =>
+  (part-2 test-input)                                       ; => 149245887792
   (part-2 task-input)                                       ; =>
 
   )
