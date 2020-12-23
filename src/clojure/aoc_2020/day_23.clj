@@ -16,70 +16,71 @@
        (map u/parse-long)))
 
 
-(defn dec-cup
-  ([max-num c]
-   (let [i (dec c)]
-     (if (< i 1) max-num i)))
-  ([max-num c picked-set]
-   (loop [c (dec-cup max-num c)]
-     (if (picked-set c)
-       (recur (dec-cup max-num c))
-       c))))
+(defn create-ring
+  ^ints [nums]
+  (->> (concat nums [(first nums)])
+       (partition 2 1)
+       (reduce
+         (fn [ring [cup next]]
+           (aset-int ring cup next)
+           ring)
+         (int-array (inc (count nums))))))
 
 
-(defn move
-  [max-num [current cups]]
-  (let [cups (concat cups cups)
-        picked (->> cups
-                    (drop-while #(not= % current))
-                    (drop 1)
-                    (take 3))
-        picked-set (set picked)
-        destination (dec-cup max-num current picked-set)
-        new-cups (->> cups
-                      (remove picked-set)
-                      (drop-while #(not= % destination))
-                      (drop 1)
-                      (concat picked)
-                      (take max-num))
-        next-cup (->> new-cups
-                      (drop-while #(not= % current))
-                      second)]
-    [next-cup (vec new-cups)]))
+(defn cup-dec
+  [max-num current a b c]
+  (loop [dest (if (= current 1) max-num (dec current))]
+    (if (or (= dest a)
+            (= dest b)
+            (= dest c))
+      (recur (if (= dest 1) max-num (dec dest)))
+      dest)))
 
 
-(defn make-moves
-  [max-num nums]
-  (->> [(first nums) nums]
-       (iterate #(move max-num %))
-       (drop (* 10 (inc max-num)))
-       first
-       second))
-
-(defn after-1
-  [nums]
-  (->> (concat nums nums)
-       (drop-while #(not= 1 %))
-       (drop 1)
-       (take 8)))
+(defn play
+  [max-num times ^ints ring current]
+  (loop [current current
+         n times]
+    (when (not= n 0)
+      (let [a (aget ring current)
+            b (aget ring a)
+            c (aget ring b)
+            destination (cup-dec max-num current a b c)
+            ;; point current at cup after c
+            next-cup (aset-int ring current (aget ring c))]
+        ;; point c at where destination points to
+        (aset-int ring c (aget ring destination))
+        ;; point destination at beginning of our 3 numbers
+        (aset-int ring destination a)
+        ;; next turn
+        (recur next-cup (dec n))))))
 
 
 (defn part-1
   [input]
-  (->> (parse-input input)
-       (make-moves 9)
-       after-1
-       string/join))
+  (let [numbers (parse-input input)
+        ring (create-ring numbers)]
+    (play 9 100 ring (first numbers))
+    (->> 1
+         (iterate #(aget ring %))
+         (drop 1)
+         (take 8)
+         string/join)))
 
 
 (defn part-2
   [input]
-  (->> (parse-input input)
-       (#(concat % (range 10 1000001)))
-       (make-moves 1000000)
-       after-1
-       (take 2)
-       (apply *)))
+  (let [numbers (parse-input input)
+        ring (create-ring (concat numbers (range 10 1000001)))]
+    (play 1000000
+          10000000
+          ring
+          (first numbers))
+    (->> 1
+         (iterate #(aget ring %))
+         (drop 1)
+         (take 2)
+         (apply *))))
 
 
 (comment
@@ -89,6 +90,6 @@
 
   ;; Part 2
   (part-2 test-input)                                       ; => 149245887792
-  (part-2 task-input)                                       ; =>
+  (part-2 task-input)                                       ; => 235551949822
 
   )
