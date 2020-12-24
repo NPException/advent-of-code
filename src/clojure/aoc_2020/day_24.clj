@@ -1,5 +1,6 @@
 (ns aoc-2020.day-24
   (:require [clojure.string :as string]
+            [clojure.core.match :refer [match]]
             [aoc-utils :as u]))
 
 ;; --- Day 24: Lobby Layout --- https://adventofcode.com/2020/day/24
@@ -15,15 +16,14 @@
          [x y :as coordinate] [0 0]]
     (if (nil? a)
       coordinate
-      (case a
-        \e (recur rest-1 [(inc x) y])
-        \w (recur rest-1 [(dec x) y])
-        \n (case b
-             \e (recur rest-2 [(inc x) (dec y)])
-             \w (recur rest-2 [x (dec y)]))
-        \s (case b
-             \e (recur rest-2 [x (inc y)])
-             \w (recur rest-2 [(dec x) (inc y)]))))))
+      (match
+        [a b]
+        [\e _] (recur rest-1 [(inc x) y])
+        [\w _] (recur rest-1 [(dec x) y])
+        [\n \e] (recur rest-2 [(inc x) (dec y)])
+        [\n \w] (recur rest-2 [x (dec y)])
+        [\s \e] (recur rest-2 [x (inc y)])
+        [\s \w] (recur rest-2 [(dec x) (inc y)])))))
 
 
 (defn parse-input
@@ -33,10 +33,10 @@
 
 
 (defn flip
-  [+black-tiles coord]
-  (if (+black-tiles coord)
-    (disj! +black-tiles coord)
-    (conj! +black-tiles coord)))
+  [+active-tiles coord]
+  (if (+active-tiles coord)
+    (disj! +active-tiles coord)
+    (conj! +active-tiles coord)))
 
 
 (defn create-initial-grid
@@ -61,47 +61,47 @@
   (inc (or x 0)))
 
 
-(defn black->white
-  [black-tiles [+white-adjacent-blacks +new-black-tiles] [x y :as black-tile]]
-  (let [adjacent-whites (->> adjacent-offsets
+(defn active->inactive
+  [active-tiles [+nearby-actives +new-active-tiles] [x y :as active-tile]]
+  (let [adjacent-inactives (->> adjacent-offsets
                              (map (fn [[ox oy]] [(+ x ox) (+ y oy)]))
-                             (remove black-tiles))
-        adjacent-blacks (- 6 (count adjacent-whites))]
+                             (remove active-tiles))
+        adjacent-actives (- 6 (count adjacent-inactives))]
     [(reduce
        #(u/update! %1 %2 inc-safe)
-       +white-adjacent-blacks
-       adjacent-whites)
-     (if (or (= adjacent-blacks 0)
-             (> adjacent-blacks 2))
-       (disj! +new-black-tiles black-tile)
-       +new-black-tiles)]))
+       +nearby-actives
+       adjacent-inactives)
+     (if (or (= adjacent-actives 0)
+             (> adjacent-actives 2))
+       (disj! +new-active-tiles active-tile)
+       +new-active-tiles)]))
 
 
-(defn white->black
-  [+new-black-tiles [white-tile adjacent-blacks]]
-  (if (= 2 adjacent-blacks)
-    (conj! +new-black-tiles white-tile)
-    +new-black-tiles))
+(defn inactive->active
+  [+new-active-tiles [inactive-tile adjacent-actives]]
+  (if (= 2 adjacent-actives)
+    (conj! +new-active-tiles inactive-tile)
+    +new-active-tiles))
 
 
 (defn daily-flips
-  [black-tiles]
-  (let [[+white-adjacent-blacks +new-black-tiles]
+  [active-tiles]
+  (let [[+inactive-adjacent-actives +new-active-tiles]
         (reduce
-          (partial black->white black-tiles)
-          [(transient {}) (transient black-tiles)]
-          black-tiles)]
+          (partial active->inactive active-tiles)
+          [(transient {}) (transient active-tiles)]
+          active-tiles)]
     (persistent!
       (reduce
-        white->black
-        +new-black-tiles
-        (persistent! +white-adjacent-blacks)))))
+        inactive->active
+        +new-active-tiles
+        (persistent! +inactive-adjacent-actives)))))
 
 
 (defn part-2
   [input]
-  (let [black-tiles (create-initial-grid input)]
-    (->> black-tiles
+  (let [active-tiles (create-initial-grid input)]
+    (->> active-tiles
          (iterate daily-flips)
          (drop 100)
          first
