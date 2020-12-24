@@ -2,6 +2,7 @@
   (:require [clojure.java.io :as io]
             [clojure.string :as string]
             [clojure.edn :as edn]
+            [clojure.main :as main]
             [org.httpkit.client :as http])
   (:import [java.time LocalDateTime]))
 
@@ -15,6 +16,31 @@
   [x]
   (println x)
   x)
+
+;; a bit of repl magic from "The Joy of Clojure"
+(defn contextual-eval [ctx expr]
+  (eval
+    `(let [~@(mapcat (fn [[k v]] [k `'~v]) ctx)]
+       ~expr)))
+
+(defmacro local-context []
+  (let [symbols (keys &env)]
+    (zipmap
+      (map (fn [sym] `(quote ~sym)) symbols)
+      symbols)))
+
+(defn readr [prompt exit-code]
+  (let [input (main/repl-read prompt exit-code)]
+    (if (= input ::exit)
+      exit-code
+      input)))
+
+;;make a break point
+(defmacro break []
+  `(main/repl
+     :prompt #(print "debug=> ")
+     :read readr
+     :eval (partial contextual-eval (local-context))))
 
 
 (defn parse-long
@@ -43,10 +69,6 @@
 
 (defn abs
   [x]
-  (if (< x 0) (- x) x))
-
-(defn absl
-  ^long [^long x]
   (if (< x 0) (- x) x))
 
 
