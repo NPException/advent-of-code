@@ -24,17 +24,6 @@
        (apply merge-with merge)))
 
 
-(defn permutations [col]
-  (lazy-seq
-    (if (next col)
-      (apply concat
-             (for [x col]
-               (->> (remove #{x} col)
-                    permutations
-                    (map #(cons x %)))))
-      [col])))
-
-
 (defn calculate-happiness
   [preferences seating-order]
   (->> (conj (vec seating-order) (first seating-order))
@@ -46,18 +35,29 @@
          0)))
 
 
+(defn optimal-seating-score
+  [preferences]
+  (->> (keys preferences)
+       u/permutations
+       (map (partial calculate-happiness preferences))
+       (apply max)))
+
+
 (defn part-1
   [input]
-  (let [preferences (parse-input input)]
-    (->> (keys preferences)
-         permutations
-         (map (partial calculate-happiness preferences))
-         (apply max))))
+  (optimal-seating-score (parse-input input)))
 
 
 (defn part-2
   [input]
-  )
+  (let [preferences (parse-input input)]
+    (-> (apply merge-with merge
+               preferences
+               (map #(hash-map % {"NPE" 0}) (keys preferences)))
+        (assoc "NPE" (->> (keys preferences)
+                          (map #(vector % 0))
+                          (into {})))
+        optimal-seating-score)))
 
 
 (comment
@@ -66,7 +66,7 @@
   (part-1 task-input)                                       ; => 709
 
   ;; Part 2
-  (part-2 test-input)                                       ; =>
-  (part-2 task-input)                                       ; =>
+  (part-2 test-input)                                       ; => 286
+  (part-2 task-input)                                       ; => 668
 
   )

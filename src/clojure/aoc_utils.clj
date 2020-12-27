@@ -113,6 +113,18 @@
    (assoc! m k (apply f (get m k) x y z more))))
 
 
+(defn permutations
+  [col]
+  (lazy-seq
+    (if (next col)
+      (apply concat
+             (for [x col]
+               (->> (remove #{x} col)
+                    permutations
+                    (map #(cons x %)))))
+      [col])))
+
+
 ;; predicate combiners
 
 (defn and-fn
