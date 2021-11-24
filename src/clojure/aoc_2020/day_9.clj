@@ -1,6 +1,7 @@
 (ns aoc-2020.day-9
   (:require [clojure.string :as string]
-            [aoc-utils :as u]))
+            [aoc-utils :as u])
+  (:import (clojure.lang IPersistentVector)))
 
 ;; --- Day 9: Encoding Error --- https://adventofcode.com/2020/day/9
 
@@ -10,6 +11,20 @@
 (def input-numbers (->> task-input
                         string/split-lines
                         (mapv parse-long)))
+
+(defn vpartition
+  "Returns a lazy sequence of vectors of n items each, at offsets step
+  apart. If step is not supplied, defaults to n, i.e. the partitions
+  do not overlap."
+  ;; TODO: implement 4-arity variant with pad collection
+  ([n ^IPersistentVector v]
+   (vpartition n n v))
+  ([n step ^IPersistentVector v]
+   (lazy-seq
+     (let [num (count v)]
+       (when (>= num n)
+         (cons (subvec v 0 n)
+               (vpartition n step (subvec v step num))))))))
 
 
 ;; part 1 functions
@@ -26,8 +41,8 @@
 
 (defn validation-groups
   [numbers preamble-size]
-  (->> (partition (inc preamble-size) 1 numbers)
-       (map (juxt last butlast))))
+  (->> (vpartition (inc preamble-size) 1 numbers)
+       (map (juxt peek pop))))
 
 
 ;; part 2 functions
