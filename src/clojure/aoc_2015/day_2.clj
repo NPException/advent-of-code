@@ -10,7 +10,7 @@
 (def sizes
   (->> (string/split-lines task-input)
        (map #(string/split % #"x"))
-       (mapv #(mapv u/parse-long %))))
+       (mapv #(mapv parse-long %))))
 
 ;; part 1
 (defn extra-area

@@ -13,7 +13,7 @@
   (let [rule (->> (re-seq #"(?:(.+?) bags contain)|(\d+) (.+?) bag" rule-string)
                   (mapcat next)
                   (remove nil?)
-                  (map #(or (u/parse-long %) %)))]
+                  (map #(or (parse-long %) %)))]
     [(first rule)
      (partition 2 (rest rule))]))
 

@@ -15,7 +15,7 @@
 (defn parse-rule
   [rule-string]
   (let [[key & nums] (string/split rule-string #": |-| or ")
-        [a b c d] (map u/parse-long nums)]
+        [a b c d] (map parse-long nums)]
     [key #(or (<= a % b) (<= c % d))]))
 
 (defn parse-rules
@@ -30,7 +30,7 @@
   (->> (string/trim tickets-input)
        string/split-lines
        (map #(string/split % #","))
-       (mapv #(mapv u/parse-long %))))
+       (mapv #(mapv parse-long %))))
 
 (defn parse-input
   [input]

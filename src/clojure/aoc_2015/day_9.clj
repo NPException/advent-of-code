@@ -19,7 +19,7 @@
   (->> (string/split-lines input)
        (map #(string/split % #" to | = "))
        (map (fn [[from to dist]]
-              [#{from to} (u/parse-long dist)]))
+              [#{from to} (parse-long dist)]))
        (into {})
        with-all-keys))
 

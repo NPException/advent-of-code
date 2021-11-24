@@ -10,7 +10,7 @@
 
 (defn parse-element
   [x]
-  (or (u/parse-long x) (keyword x)))
+  (or (parse-long x) (keyword x)))
 
 (defn parse-input
   [input]

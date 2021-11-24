@@ -43,14 +43,6 @@
      :eval (partial contextual-eval (local-context))))
 
 
-(defn parse-long
-  "Parses the given String to a long. If it cannot be parsed, returns nil."
-  [s]
-  (try
-    (Long/parseLong s)
-    (catch Exception _)))
-
-
 (defn parse-binary
   [s]
   (try

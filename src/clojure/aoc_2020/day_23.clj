@@ -13,7 +13,7 @@
   [input]
   (->> input
        (map str)
-       (map u/parse-long)))
+       (map parse-long)))
 
 
 (defn create-ring

@@ -9,7 +9,7 @@
 
 (def input-numbers (->> task-input
                         string/split-lines
-                        (mapv u/parse-long)))
+                        (mapv parse-long)))
 
 
 ;; part 1 functions

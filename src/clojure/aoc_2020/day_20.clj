@@ -17,7 +17,7 @@
 (defn parse-tile
   [tile-input]
   (let [[_ id rows-input] (string/split tile-input #"Tile |:\n")]
-    {:id          (u/parse-long id)
+    {:id          (parse-long id)
      :orientation :BASE
      :grid        (string/split-lines rows-input)}))
 

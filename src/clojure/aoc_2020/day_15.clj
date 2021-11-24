@@ -36,7 +36,7 @@
 (defn find-spoken-number
   [input n]
   (->> (string/split input #",")
-       (map u/parse-long)
+       (map parse-long)
        gen-numbers
        (take n)
        last))

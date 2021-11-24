@@ -9,7 +9,7 @@
 
 (defn try-long
   [x]
-  (or (u/parse-long x) x))
+  (or (parse-long x) x))
 
 (defn parse-instructions
   [input]

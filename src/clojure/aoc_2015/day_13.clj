@@ -14,7 +14,7 @@
   (let [[_ name op n name-2]
         (re-matches #"(\w+) would (gain|lose) (\d+) happiness units by sitting next to (\w+)\."
                     line)
-        n (u/parse-long n)]
+        n (parse-long n)]
     {name {name-2 (if (= op "gain") n (- n))}}))
 
 (defn parse-input

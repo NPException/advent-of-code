@@ -12,8 +12,8 @@
 (defn parse-input
   [^String input]
   (let [[time & bus-ids] (string/split input #"[\n,]")]
-    [(u/parse-long time)
-     (mapv u/parse-long bus-ids)]))
+    [(parse-long time)
+     (mapv parse-long bus-ids)]))
 
 
 ;; part 1

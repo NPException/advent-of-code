@@ -12,7 +12,7 @@
 (defn parse-instructions
   [input]
   (->> (string/split-lines input)
-       (into [] (map #(vector (first %) (u/parse-long (subs % 1)))))))
+       (into [] (map #(vector (first %) (parse-long (subs % 1)))))))
 
 
 (defn distance-travelled

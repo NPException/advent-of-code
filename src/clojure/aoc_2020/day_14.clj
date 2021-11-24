@@ -24,8 +24,8 @@
             (-> arg-2 (string/replace \X \1) u/parse-binary)
             (find-floaty-bits arg-2)]
     "mem" [:mem
-           (u/parse-long arg-1)
-           (u/parse-long arg-2)]))
+           (parse-long arg-1)
+           (parse-long arg-2)]))
 
 
 (defn parse-program
