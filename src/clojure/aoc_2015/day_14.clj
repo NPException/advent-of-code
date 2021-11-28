@@ -25,12 +25,16 @@
 
 ;; part 1 functions
 
-(defn distance-at
-  [{:keys [speed dex rest]} seconds]
+(defn distance-steps
+  [{:keys [speed dex rest]} target-time]
   (->> (concat (repeat dex speed) (repeat rest 0))
        (cycle)
-       (take seconds)
-       (apply +)))
+       (take target-time)))
+
+
+(defn distance-at
+  [deer target-time]
+  (apply + (distance-steps deer target-time)))
 
 
 (defn part-1
@@ -41,9 +45,36 @@
        (first)))
 
 
+;; part 2 functions
+
+(defn accumulated-distances
+  [deer target-time]
+  (vec (reductions + (distance-steps deer target-time))))
+
+
+(defn update-scores
+  [distances scores step]
+  (->> distances
+       (sort-by #(nth (val %) step) >)
+       (partition-by #(nth (val %) step))                   ;; catch multiple leaders in the same distance
+       (first)
+       (map key)
+       (reduce
+         #(update %1 %2 inc)
+         scores)))
+
+
 (defn part-2
-  [input]
-  )
+  [input target-time]
+  (let [deers (parse-input input)
+        distances (into {} (map (juxt :name #(accumulated-distances % target-time)) deers))
+        final-scores (reduce
+                       #(update-scores distances %1 %2)
+                       (into {} (map #(vector (:name %) 0) deers))
+                       (range target-time))]
+    (->> final-scores
+         (sort-by val >)
+         first)))
 
 
 (comment
@@ -52,7 +83,7 @@
   (part-1 task-input 2503)                                  ; => ["Vixen" 2660]
 
   ;; Part 2
-  (part-2 test-input)                                       ; =>
-  (part-2 task-input)                                       ; =>
+  (part-2 test-input 1000)                                   ; => ["Dancer" 689]
+  (part-2 task-input 2503)                                   ; => ["Blitzen" 1256]
 
   )
