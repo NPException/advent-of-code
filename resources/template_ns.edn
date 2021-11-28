@@ -1,5 +1,6 @@
 (ns aoc-%>year<%.day-%>day<%
   (:require [clojure.string :as string]
+            [clojure.java.math :as math]
             [aoc-utils :as u]))
 
 ;; --- Day %>day<%:  --- https://adventofcode.com/%>year<%/day/%>day<%
