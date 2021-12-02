@@ -117,6 +117,33 @@
       [col])))
 
 
+(defn partition-xf
+  "A transducer variation of clojure.core/partition."
+  ([^long n] (partition-xf n n))
+  ([^long n ^long step]
+   (fn [rf]
+     (let [a (java.util.ArrayDeque. n)]
+       (fn
+         ([] (rf))
+         ([result]
+          (let [v (when (= (.size a) n)
+                    (vec (.toArray a)))
+                ;; allow early garbage collection
+                _ (.clear a)
+                result (if v
+                         (unreduced (rf result v))
+                         result)]
+            (rf result)))
+         ([result input]
+          (.add a input)
+          (if (= n (.size a))
+            (let [v (vec (.toArray a))]
+              (dotimes [_ step]
+                (.removeFirst a))
+              (rf result v))
+            result)))))))
+
+
 ;; predicate combiners
 
 (defn and-fn

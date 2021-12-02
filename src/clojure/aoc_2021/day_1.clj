@@ -1,36 +1,34 @@
 (ns aoc-2021.day-1
-  (:require [clojure.string :as str]
-            [aoc-utils :as u]))
+  (:use [criterium.core])
+  (:require [aoc-utils :as u]
+            [clojure.edn :as edn]))
 
 ;; --- Day 1: Sonar Sweep --- https://adventofcode.com/2021/day/1
 
-(def task-input (u/slurp-resource "inputs/aoc_2021/day-1.txt"))
+(def task-input (edn/read-string (str "[" (u/slurp-resource "inputs/aoc_2021/day-1.txt") "]")))
 
-(def test-input "199\n200\n208\n210\n200\n207\n240\n269\n260\n263")
+(def test-input (edn/read-string "[ 199\n200\n208\n210\n200\n207\n240\n269\n260\n263 ]"))
 
 
-(defn do-the-thing
+(defn count-increasing-steps
   [input transform]
-  (->> (str/split-lines input)
-       (map parse-long)
-       transform
-       (partition 2 1)
-       (filter #(apply < %))
-       count))
+  (transduce
+    (comp transform
+          (u/partition-xf 2 1)
+          (map (fn [[a b]]
+                 (if (< a b) 1 0))))
+    +
+    input))
 
 (defn part-1
   [input]
-  (do-the-thing input identity))
+  (count-increasing-steps input identity))
 
-
-(defn sum-windows
-  [nums]
-  (->> (partition 3 1 nums)
-       (map #(apply + %))))
 
 (defn part-2
   [input]
-  (do-the-thing input sum-windows))
+  (count-increasing-steps input (comp (u/partition-xf 3 1)
+                                      (map #(apply + %)))))
 
 
 (comment
