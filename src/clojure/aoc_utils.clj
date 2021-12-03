@@ -4,7 +4,10 @@
             [clojure.edn :as edn]
             [clojure.main :as main]
             [org.httpkit.client :as http])
-  (:import [java.time LocalDateTime]))
+  (:import (java.time LocalDateTime)
+           (java.util HashMap ArrayDeque)
+           (clojure.lang PersistentHashMap)
+           (java.util.function BiFunction)))
 
 
 (defn slurp-resource
@@ -122,7 +125,7 @@
   ([^long n] (partition-xf n n))
   ([^long n ^long step]
    (fn [rf]
-     (let [a (java.util.ArrayDeque. n)]
+     (let [a (ArrayDeque. n)]
        (fn
          ([] (rf))
          ([result]
@@ -142,6 +145,18 @@
                 (.removeFirst a))
               (rf result v))
             result)))))))
+
+
+(defn frequencies+
+  "Returns a map from distinct items in coll to the number of times
+  they appear. Quicker than clojure.core/frequencies due to interop."
+  [coll]
+  (let [m (HashMap.)]
+    (doseq [e coll]
+      (.compute m e (reify BiFunction
+                      (apply [_ _k v]
+                        (if (nil? v) 1 (unchecked-inc-int v))))))
+    (PersistentHashMap/create m)))
 
 
 ;; predicate combiners
