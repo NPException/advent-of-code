@@ -26,9 +26,11 @@
   ;; Part 1
   (part-1 test-input)                                       ; =>
   (part-1 task-input)                                       ; =>
+  (quick-bench (part-1 task-input))
 
   ;; Part 2
   (part-2 test-input)                                       ; =>
   (part-2 task-input)                                       ; =>
+  (quick-bench (part-2 task-input))
 
   )

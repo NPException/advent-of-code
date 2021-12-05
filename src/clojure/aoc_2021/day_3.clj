@@ -14,7 +14,7 @@
 
 (defn most-common-bit
   [& bits]
-  (let [{ones \1 zeros \0} (u/frequencies+ bits)]           ;; using a custom 'frequencies' impl for a bit more speed
+  (let [{ones \1 zeros \0} (frequencies bits)]
     (if (>= (or ones 0) (or zeros 0)) \1 \0)))
 
 (defn part-1

@@ -5,9 +5,7 @@
             [clojure.main :as main]
             [org.httpkit.client :as http])
   (:import (java.time LocalDateTime)
-           (java.util HashMap ArrayDeque)
-           (clojure.lang PersistentHashMap)
-           (java.util.function BiFunction)))
+           (java.util ArrayDeque)))
 
 
 (defn slurp-resource
@@ -147,16 +145,13 @@
             result)))))))
 
 
-(defn frequencies+
-  "Returns a map from distinct items in coll to the number of times
-  they appear. Quicker than clojure.core/frequencies due to interop."
-  [coll]
-  (let [m (HashMap.)]
-    (doseq [e coll]
-      (.compute m e (reify BiFunction
-                      (apply [_ _k v]
-                        (if (nil? v) 1 (unchecked-inc-int v))))))
-    (PersistentHashMap/create m)))
+(defn count-matching
+  "Counts the number of elements in coll which match the given predicate."
+  [pred coll]
+  (reduce
+    #(if (pred %2) (inc %1) %1)
+    0
+    coll))
 
 
 ;; predicate combiners
