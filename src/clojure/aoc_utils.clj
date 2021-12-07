@@ -45,14 +45,14 @@
 
 
 (defn parse-binary
-  [s]
+  ^long [s]
   (try
     (Long/parseLong s 2)
     (catch Exception _)))
 
 
 (defn pow
-  [^long a ^long b]
+  ^long [^long a ^long b]
   (loop [r 1
          n b]
     (if (= n 0)
@@ -61,7 +61,7 @@
 
 
 (defn abs
-  [x]
+  ^long [^long x]
   (if (< x 0) (- x) x))
 
 
@@ -147,9 +147,9 @@
 
 (defn count-matching
   "Counts the number of elements in coll which match the given predicate."
-  [pred coll]
+  ^long [pred coll]
   (reduce
-    #(if (pred %2) (inc %1) %1)
+    (fn [^long r v] (if (pred v) (inc r) r))
     0
     coll))
 
