@@ -1,8 +1,7 @@
 (ns aoc-2021.day-8
   (:use [criterium.core])
   (:require [clojure.string :as str]
-            [aoc-utils :as u]
-            [clojure.set :as set]))
+            [aoc-utils :as u]))
 
 ;; --- Day 8: Seven Segment Search --- https://adventofcode.com/2021/day/8
 
@@ -13,8 +12,8 @@
 
 (defn parse-line
   [line]
-  (->> (str/split line #"\|")
-       (mapv #(filterv seq (map set (str/split % #"\s+"))))))
+  (let [[inputs outputs] (str/split line #" \| ")]
+    [inputs (str/split outputs #" ")]))
 
 
 (defn count-unique-output-digits
@@ -30,41 +29,22 @@
        (map count-unique-output-digits)
        (apply +)))
 
-
-;; only returns wiresets that have exactly n elements
-(defn filter-active-wires
-  [n inputs]
-  (filterv #(#{n} (count %)) inputs))
-
-(defn build-digits
-  [inputs]
-  (let [maybe-235 (filter-active-wires 5 inputs)
-        maybe-069 (filter-active-wires 6 inputs)
-        one (first (filter-active-wires 2 inputs))
-        contains-one? #(= one (set/intersection one %))
-        three (first (filter contains-one? maybe-235))
-        four (first (filter-active-wires 4 inputs))
-        contains-four? #(= four (set/intersection four %))
-        six (first (remove contains-one? maybe-069))
-        contained-in-six? #(= % (set/intersection six %))
-        five (first (filter contained-in-six? maybe-235))
-        two (first (remove #{three five} maybe-235))
-        seven (first (filter-active-wires 3 inputs))
-        eight (first (filter-active-wires 7 inputs))
-        nine (first (filter contains-four? maybe-069))
-        zero (first (remove #{six nine} maybe-069))]
-    {zero 0, one 1, two 2, three 3, four 4, five 5, six 6, seven 7, eight 8, nine 9}))
+;; precalculated map of sums
+(def known-frequency-sums
+  {42 0, 17 1, 34 2, 39 3, 30 4, 37 5, 41 6, 25 7, 49 8, 45 9})
 
 (defn solve-line
   [[inputs outputs]]
-  (->> (map (build-digits inputs) outputs)
-       (apply str)
-       (parse-long)))
+  (let [freqs (frequencies inputs)]
+    (->> outputs
+         (mapv #(->> (mapv freqs %) (apply +) known-frequency-sums))
+         (str/join)
+         (parse-long))))
 
 (defn part-2
   [input]
   (->> (str/split-lines input)
-       (map (comp solve-line parse-line))
+       (pmap #(-> % parse-line solve-line))
        (apply +)))
 
 
