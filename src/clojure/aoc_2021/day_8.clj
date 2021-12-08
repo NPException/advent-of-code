@@ -29,7 +29,9 @@
        (map count-unique-output-digits)
        (apply +)))
 
-;; precalculated map of sums
+;; Calculating the frequencies of each segment in all digits,
+;; and then adding the frequency for each segment within each digit
+;; gives a unique sum for each digit. These are hardcoded here.
 (def known-frequency-sums
   {42 0, 17 1, 34 2, 39 3, 30 4, 37 5, 41 6, 25 7, 49 8, 45 9})
 
