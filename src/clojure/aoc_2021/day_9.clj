@@ -11,29 +11,59 @@
 
 
 (defn point-at
-  [grid x y]
-  (-> grid (nth y "") (nth x 1000) int))
+  ([grid [x y]] (point-at grid x y))
+  ([grid x y]
+   (-> grid (nth y "") (nth x \9))))
+
+(defn neighbours
+  ([[x y]] (neighbours x y))
+  ([x y]
+   [[(dec x) y] [(inc x) y] [x (dec y)] [x (inc y)]]))
 
 (defn low-point?
-  [grid value x y]
-  (and (< value (point-at grid (dec x) y))
-       (< value (point-at grid (inc x) y))
-       (< value (point-at grid x (dec y)))
-       (< value (point-at grid x (inc y)))))
+  [grid x y]
+  (let [value (int (point-at grid x y))]
+    (->> (neighbours x y)
+         (mapv #(point-at grid %))
+         (every? #(< value (int %))))))
+
+(defn find-low-points
+  [grid]
+  (for [y (range (count grid))
+        x (range (count (first grid)))
+        :when (low-point? grid x y)]
+    [x y]))
+
 
 (defn part-1
   [input]
-  (let [grid (str/split-lines input)]
-    (apply + (for [y (range (count grid))
-                   x (range (count (first grid)))
-                   :let [value (point-at grid x y)]
-                   :when (low-point? grid value x y)]
-               (- value 47)))))
+  (let [grid (str/split-lines input)
+        lowpoints (find-low-points grid)]
+    (apply + (map #(- (int (point-at grid %)) 47) lowpoints))))
 
+
+(defn calc-basin-size
+  [grid lowpoint]
+  (loop [[point & remaining] [lowpoint]
+         seen #{point}
+         size 1]
+    (if (nil? point)
+      size
+      (let [basin-neighbours (->> (neighbours point)
+                                  (remove #(or (seen %) (= \9 (point-at grid %)))))]
+        (recur (into remaining basin-neighbours)
+               (into seen basin-neighbours)
+               (+ size (count basin-neighbours)))))))
 
 (defn part-2
   [input]
-  )
+  (let [grid (str/split-lines input)
+        lowpoints (find-low-points grid)]
+    (calc-basin-size grid (first lowpoints))
+    (->> (mapv #(calc-basin-size grid %) lowpoints)
+         (sort #(< %2 %1))
+         (take 3)
+         (apply *))))
 
 
 (comment
@@ -43,8 +73,8 @@
   (quick-bench (part-1 task-input))
 
   ;; Part 2
-  (part-2 test-input)                                       ; =>
-  (part-2 task-input)                                       ; =>
+  (part-2 test-input)                                       ; => 1134
+  (part-2 task-input)                                       ; => 1148965
   (quick-bench (part-2 task-input))
 
   )
