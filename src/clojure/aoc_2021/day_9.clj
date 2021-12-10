@@ -45,21 +45,18 @@
 (defn calc-basin-size
   [grid lowpoint]
   (loop [[point & remaining] [lowpoint]
-         seen #{point}
-         size 1]
+         seen #{point}]
     (if (nil? point)
-      size
+      (count seen)
       (let [basin-neighbours (->> (neighbours point)
                                   (remove #(or (seen %) (= \9 (point-at grid %)))))]
         (recur (into remaining basin-neighbours)
-               (into seen basin-neighbours)
-               (+ size (count basin-neighbours)))))))
+               (into seen basin-neighbours))))))
 
 (defn part-2
   [input]
   (let [grid (str/split-lines input)
         lowpoints (find-low-points grid)]
-    (calc-basin-size grid (first lowpoints))
     (->> (mapv #(calc-basin-size grid %) lowpoints)
          (sort #(< %2 %1))
          (take 3)
