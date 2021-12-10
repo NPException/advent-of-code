@@ -58,7 +58,7 @@
   (let [grid (str/split-lines input)
         lowpoints (find-low-points grid)]
     (->> (mapv #(calc-basin-size grid %) lowpoints)
-         (sort #(< %2 %1))
+         (sort >)
          (take 3)
          (apply *))))
 
