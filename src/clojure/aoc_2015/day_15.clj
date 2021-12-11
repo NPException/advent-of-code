@@ -1,6 +1,5 @@
 (ns aoc-2015.day-15
   (:require [clojure.string :as string]
-            [clojure.java.math :as math]
             [aoc-utils :as u]))
 
 ;; --- Day 15: Science for Hungry People --- https://adventofcode.com/2015/day/15
@@ -58,9 +57,23 @@
         (recur (dec n) (add-optimal-ingredient recipe ingredients))))))
 
 
+(defn multiply-ingredient
+  [ingredient amount]
+  (into {} (mapv #(vector (key %) (* (val %) amount)) ingredient)))
+
+(defn build-recipe
+  [ingredients amounts]
+  (->> (mapv multiply-ingredient ingredients amounts)
+       (apply merge-with +)))
+
 (defn part-2
   [input]
-  )
+  (let [ingredients (vec (vals (parse-input input)))]
+    (->> (u/partitions 100 (count ingredients))
+         (map #(build-recipe ingredients %))
+         (filter #(= (:calories %) 500))
+         (map score)
+         (apply max))))
 
 
 (comment
@@ -76,6 +89,6 @@
 
   ;; Part 2
   (part-2 test-input)                                       ; => 57600000
-  (part-2 task-input)                                       ; =>
+  (part-2 task-input)                                       ; => 15862900
 
   )

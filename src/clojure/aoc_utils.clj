@@ -89,7 +89,8 @@
   [n f col]
   (->> (partition-all n col)
        (pmap #(mapv f %))
-       (apply concat)))
+       (apply concat)
+       (vec)))
 
 
 (defn update!
@@ -116,6 +117,18 @@
                     permutations
                     (map #(cons x %)))))
       [col])))
+
+
+(defn partitions
+  "Generates a sequence of all possible options for
+  how the number n can be split up into k numbers"
+  [^long n ^long k]
+  (if (> k 1)
+    (mapcat (fn [^long x]
+              (map (partial cons x)
+                   (partitions (- n x) (dec k))))
+            (range 1 (inc (- n (dec k)))))
+    [[n]]))
 
 
 (defn partition-xf
