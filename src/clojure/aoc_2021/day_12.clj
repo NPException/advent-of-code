@@ -22,30 +22,26 @@
 (def only-once? #(Character/isLowerCase (char (first %))))
 
 (defn branch-out
-  [valid-next-point? navi [ongoing done] [[pos :as path] seen]]
-  (if-let [next-points (->> (navi pos)
-                            (filter #(valid-next-point? seen %))
-                            (seq))]
+  [valid-next-point? navi [ongoing done] [last-pos seen]]
+  (if-let [next-points (->> (navi last-pos)
+                            (filterv #(valid-next-point? seen %))
+                            (not-empty))]
     [(into ongoing
            (comp (remove #(= "end" %))
-                 (map #(vector (conj path %)
-                               (if (and (only-once? %) (seen %))
-                                 (conj seen :visited-twice)
-                                 (conj seen %)))))
+                 (map #(vector % (if (and (only-once? %) (seen %))
+                                   (conj seen :visited-twice)
+                                   (conj seen %)))))
            next-points)
-     (into done
-           (comp (filter #(= "end" %))
-                 (map #(conj path %)))
-           next-points)]
+     (+ done (count (filter #(= "end" %) next-points)))]
     [ongoing done]))
 
 (defn solve
   [input valid-next-point?]
   (let [navi (parse-paths input)]
-    (loop [[ongoing done] [[['("start") #{"start"}]]
-                           []]]
+    (loop [[ongoing done] [[["start" #{"start"}]]
+                           0]]
       (if (empty? ongoing)
-        (count done)
+        done
         (recur (reduce #(branch-out valid-next-point? navi %1 %2)
                        [[] done]
                        ongoing))))))
