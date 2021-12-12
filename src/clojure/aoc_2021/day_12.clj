@@ -21,48 +21,50 @@
 
 (def only-once? #(Character/isLowerCase (char (first %))))
 
+(defn update-seen
+  [seen pos]
+  (if (and (only-once? pos) (seen pos))
+    (conj seen :visited-twice)
+    (conj seen pos)))
+
+(defn valid-next-point?
+  [seen pos]
+  (or (not (only-once? pos))
+      (and (not= "start" pos)
+           (or (not (seen pos))
+               (not (seen :visited-twice))))))
+
 (defn branch-out
-  [valid-next-point? navi [ongoing done] [last-pos seen]]
+  [navi [ongoing done] [last-pos seen]]
   (if-let [next-points (->> (navi last-pos)
                             (filterv #(valid-next-point? seen %))
                             (not-empty))]
     [(into ongoing
            (comp (remove #(= "end" %))
-                 (map #(vector % (if (and (only-once? %) (seen %))
-                                   (conj seen :visited-twice)
-                                   (conj seen %)))))
+                 (map #(vector % (update-seen seen %))))
            next-points)
      (+ done (count (filter #(= "end" %) next-points)))]
     [ongoing done]))
 
 (defn solve
-  [input valid-next-point?]
+  [input allow-double-visit?]
   (let [navi (parse-paths input)]
-    (loop [[ongoing done] [[["start" #{"start"}]]
+    (loop [[ongoing done] [[["start" #{"start" (or allow-double-visit? :visited-twice)}]]
                            0]]
       (if (empty? ongoing)
         done
-        (recur (reduce #(branch-out valid-next-point? navi %1 %2)
+        (recur (reduce #(branch-out navi %1 %2)
                        [[] done]
                        ongoing))))))
 
 (defn part-1
   [input]
-  (solve
-    input
-    (fn [seen pos]
-      (not (and (only-once? pos) (seen pos))))))
+  (solve input false))
 
 
 (defn part-2
   [input]
-  (solve
-    input
-    (fn [seen pos]
-      (or (not (only-once? pos))
-          (and (not= "start" pos)
-               (or (not (seen pos))
-                   (not (seen :visited-twice))))))))
+  (solve input true))
 
 
 (comment
