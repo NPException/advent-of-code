@@ -107,6 +107,21 @@
    (assoc! m k (apply f (get m k) x y z more))))
 
 
+(defn group-by-and-map
+  "Returns a map of the elements of coll keyed by the result of
+  gf on each element. The value at each key will be a vector of the
+  corresponding elements mapped by mf, in the order they appeared in coll."
+  {:added "1.2"
+   :static true}
+  [gf mf coll]
+  (persistent!
+    (reduce
+      (fn [ret x]
+        (let [k (gf x)]
+          (assoc! ret k (conj (get ret k []) (mf x)))))
+      (transient {}) coll)))
+
+
 (defn permutations
   [col]
   (lazy-seq
