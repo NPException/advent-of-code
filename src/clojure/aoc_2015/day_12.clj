@@ -24,16 +24,15 @@
 
 (defn part-1
   [input]
-  (sum input (u/or-fn sequential? set? map?)))
+  (sum input (u/or-fn vector? map?)))
 
 
 (defn part-2
   [input]
   (sum input
        (u/and-fn
-         (u/or-fn sequential? set? map?)
-         #(not (and (map? %)
-                    (some #{"red"} (vals %)))))))
+         (u/or-fn vector? map?)
+         (u/not-fn (u/and-fn map? #(->> % vals (some #{"red"})))))))
 
 
 (comment
