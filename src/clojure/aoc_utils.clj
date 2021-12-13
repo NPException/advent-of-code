@@ -3,7 +3,8 @@
             [clojure.string :as string]
             [clojure.edn :as edn]
             [clojure.main :as main]
-            [org.httpkit.client :as http])
+            [org.httpkit.client :as http]
+            [clojure.walk :as walk])
   (:import (java.time LocalDateTime)
            (java.util ArrayDeque)))
 
@@ -91,6 +92,30 @@
        (pmap #(mapv f %))
        (apply concat)
        (vec)))
+
+
+(defn keywordize-keys
+  "Recursively transforms all map keys from strings/symbols to keywords.
+  (copied and modified from `clojure.walk/keywordize-keys`)"
+  [m]
+  (let [f (fn [[k v]]
+            (if (or (string? k) (symbol? k))
+              [(keyword k) v]
+              [k v]))]
+    ;; only apply to maps
+    (walk/postwalk
+      (fn [x]
+        (if (map? x)
+          (into {} (map f x))
+          x))
+      m)))
+
+
+(defn first-match
+  "Returns the first x in coll for which (pred x) returns logical true, else nil"
+  [pred coll]
+  (when-let [[x & remain] (seq coll)]
+    (if (pred x) x (recur pred remain))))
 
 
 (defn update!
