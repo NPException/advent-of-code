@@ -6,7 +6,8 @@
             [org.httpkit.client :as http]
             [clojure.walk :as walk])
   (:import (java.time LocalDateTime)
-           (java.util ArrayDeque)))
+           (java.util ArrayDeque HashMap HashSet PriorityQueue Comparator)
+           (java.util.function ToDoubleFunction)))
 
 
 (defn slurp-resource
@@ -205,6 +206,49 @@
     (fn [^long r v] (if (pred v) (inc r) r))
     0
     coll))
+
+
+(defn A*-search
+  "A* implementation translated from https://en.wikipedia.org/wiki/A*_search_algorithm#Pseudocode
+  nil elements are not permitted. (might implement later)"
+  [start goal neighbours-fn heuristic-fn cost-fn]
+  (let [came-from (HashMap.)                                ;; For node n, (came-from n) is the node immediately preceding it on the cheapest path from start to n currently known.
+        g-score (HashMap.)                                  ;; <double> For node n, (g-score n) is the cost of the cheapest path from start to n currently known. (default: infinity)
+        f-score (HashMap.)                                  ;; <double> For node n, (f-score n) is (g-score n) + (h n). (f-score n) represents our current best guess as to how short a path from start to finish can be if it goes through n.
+        open-set (HashSet.)                                 ;; The set of discovered nodes that may need to be (re-)expanded. Initially, only the start node is known.
+        open-queue (PriorityQueue.
+                     (Comparator/comparingDouble
+                       (reify ToDoubleFunction
+                         (applyAsDouble [_ e] (.doubleValue ^Number (.getOrDefault f-score e Double/POSITIVE_INFINITY))))))]
+    (.put g-score start 0.0)
+    (.put f-score start (.doubleValue ^Number (heuristic-fn start)))
+    (.add open-set start)
+    (.add open-queue start)
+    (loop []
+      (when-some [current (.poll open-queue)]
+        (.remove open-set current)
+        (if (= current goal)
+          ;; construct result
+          (loop [n goal
+                 path (list goal)]
+            (if-some [n (.get came-from n)]
+              (recur n (conj path n))
+              path))
+          ;; continue search
+          (do (doseq [neighbour (neighbours-fn current)]
+                ;; (cost-fn current neighbor) is the weight of the edge from current to neighbor
+                ;; tentative-g-score is the distance from start to the neighbor through current
+                (let [tentative-g-score (+ ^double (.getOrDefault g-score current Double/POSITIVE_INFINITY)
+                                           (.doubleValue ^Number (cost-fn current neighbour)))]
+                  (when (< tentative-g-score ^double (.getOrDefault g-score neighbour Double/POSITIVE_INFINITY))
+                    ;; This path to neighbor is better than any previous one. Record it!
+                    (.put came-from neighbour current)
+                    (.put g-score neighbour tentative-g-score)
+                    (.put f-score neighbour (+ tentative-g-score (.doubleValue ^Number (heuristic-fn neighbour))))
+                    (when-not (.contains open-set neighbour)
+                      (.add open-queue neighbour)
+                      (.add open-set neighbour)))))
+              (recur)))))))
 
 
 ;; predicate combiners
