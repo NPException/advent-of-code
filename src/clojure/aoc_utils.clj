@@ -76,13 +76,29 @@
 
 
 (defn byte->hex
-  [b]
+  ^String [b]
   (hex-lookup (Byte/toUnsignedInt b)))
 
 
 (defn bytes->hex
-  [bytes]
-  (apply str (mapv byte->hex bytes)))
+  ^String [bytes]
+  (if (bytes? bytes)
+    ;; fast path
+    (let [^bytes bytes bytes
+          byte-num (alength bytes)
+          sb (StringBuilder. ^long (* 2 byte-num))]
+      (loop [i 0]
+        (when (< i byte-num)
+          (.append sb (byte->hex (aget bytes i)))
+          (recur (inc i))))
+      (.toString sb))
+    ;; generic impl
+    (let [sb (StringBuilder.)]
+      (loop [[b & bytes] bytes]
+        (if b
+          (do (.append sb (byte->hex b))
+              (recur bytes))
+          (.toString sb))))))
 
 
 (defn cpmap
