@@ -91,8 +91,7 @@
   [n f col]
   (->> (partition-all n col)
        (pmap #(mapv f %))
-       (apply concat)
-       (vec)))
+       (apply concat)))
 
 
 (defn keywordize-keys
