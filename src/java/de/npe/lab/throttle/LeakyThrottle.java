@@ -22,15 +22,20 @@ public final class LeakyThrottle implements Throttle {
 		start = System.nanoTime();
 	}
 
-	public <T> T fetch(Supplier<T> supplier) {
+	private synchronized boolean update() {
 		var now = System.nanoTime();
 		var decrements = (now - start) / decTime;
 		used = decrements > used ? 0 : used - decrements;
 		start += decrements * decTime;
 		if (used >= amount) {
-			return null;
+			return false;
 		}
 		used++;
-		return supplier.get();
+		return true;
 	}
+
+	public <T> T fetch(Supplier<T> supplier) {
+		return update() ? supplier.get() : null;
+	}
+
 }
