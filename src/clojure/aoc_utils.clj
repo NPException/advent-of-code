@@ -17,7 +17,7 @@
 
 (defn read-edn-lines
   [input]
-  (read-string (str "[" (str/split-lines input) "]")))
+  (read-string (str "[" input "]")))
 
 
 (defn inspect
