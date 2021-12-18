@@ -1,6 +1,6 @@
 (ns aoc-utils
   (:require [clojure.java.io :as io]
-            [clojure.string :as string]
+            [clojure.string :as str]
             [clojure.edn :as edn]
             [clojure.main :as main]
             [org.httpkit.client :as http]
@@ -13,6 +13,11 @@
 (defn slurp-resource
   [path]
   (slurp (io/resource path)))
+
+
+(defn read-edn-lines
+  [input]
+  (read-string (str "[" (str/split-lines input) "]")))
 
 
 (defn inspect
@@ -303,7 +308,7 @@
     (let [entries (mapv
                     #(list 'quote %)
                     (edn/read-string
-                      (if (string/starts-with? entries "[")
+                      (if (str/starts-with? entries "[")
                         entries
                         (str "[" entries "]"))))]
       `(get-in ~(symbol sym-name) ~entries))))
@@ -317,7 +322,7 @@
   {x [a b]} - Similar to {x k}, but resolves via 'get-in'."
   [^String s]
   (let [placeholders (re-seq #"\{([^{} ,]+)(?: ([^{} ,]+|\[(?:[^{} ,]+[, ]*)+\]))?\}" s)
-        format-string (reduce #(string/replace-first %1 (first %2) "%s") s placeholders)
+        format-string (reduce #(str/replace-first %1 (first %2) "%s") s placeholders)
         values (->> placeholders
                     (map parse-debug-value)
                     (map #(list 'clojure.core/pr-str %)))]
@@ -337,14 +342,14 @@
          input (:body @(http/get (str "https://adventofcode.com/" year "/day/" day "/input")
                                  {:headers {"cookie" (str "session=" (System/getenv "AOC_SESSION"))}}))]
      (-> inputs-file .getParentFile .mkdirs)
-     (spit inputs-file (string/trim-newline input))
+     (spit inputs-file (str/trim-newline input))
      (println "Downloaded input to" (.getPath inputs-file)))
    ;; create clojure namespace file
    (let [ns-file (io/file (str "./src/clojure/aoc_" year "/day_" day ".clj"))]
      (-> ns-file .getParentFile .mkdirs)
      (when (.createNewFile ns-file)
        (-> (slurp-resource "template_ns.edn")
-           (string/replace #"%>.+?<%" {"%>year<%" (str year)
+           (str/replace #"%>.+?<%" {"%>year<%" (str year)
                                        "%>day<%"  (str day)})
            (#(spit ns-file %)))
        (println "Created Clojure namespace in " (.getPath ns-file))))))
