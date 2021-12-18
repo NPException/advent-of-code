@@ -1,8 +1,6 @@
 (ns aoc-2021.day-18
   (:use [criterium.core])
-  (:require [clojure.string :as str]
-            [clojure.java.math :as math]
-            [aoc-utils :as u]))
+  (:require [aoc-utils :as u]))
 
 ;; --- Day 18: Snailfish --- https://adventofcode.com/2021/day/18
 
@@ -10,12 +8,11 @@
 
 (def test-input (u/read-edn-lines "[[[0,[5,8]],[[1,7],[9,6]]],[[4,[1,2]],[[1,4],2]]]\n[[[5,[2,8]],4],[5,[[9,9],0]]]\n[6,[[[6,2],[5,6]],[[7,6],[4,7]]]]\n[[[6,[0,7]],[0,9]],[4,[9,[9,0]]]]\n[[[7,[6,4]],[3,[1,3]]],[[[5,5],1],9]]\n[[6,[[7,3],[3,2]]],[[[3,8],[5,7]],4]]\n[[[[5,4],[7,7]],8],[[8,3],8]]\n[[9,3],[[9,9],[6,[4,9]]]]\n[[2,[[7,7],7]],[[5,8],[[9,3],[0,2]]]]\n[[[[5,2],5],[8,[3,7]]],[[5,[7,5]],[4,4]]]"))
 
-(defn print-sn
+#_(defn print-sn
   ([sn]
    (println (print-sn sn 0)))
   ([sn level]
-   (str/replace (pr-str sn) \space \,)
-   #_(let [level+ (inc level)]
+   (let [level+ (inc level)]
        (cond
          (and (= level 4) (vector? sn))
          (str "<" (first sn) "," (second sn) ">")
@@ -23,6 +20,7 @@
          (str "[" (print-sn (first sn) level+) "," (print-sn (second sn) level+) "]")
          :else
          (str (when (>= sn 10) "*") sn)))))
+
 
 (defn find-path
   [node level path finalize-path]
@@ -110,14 +108,11 @@
   (let [size (count input)]
     (->> (for [a (range size)
                :let [sn-a (nth input a)]]
-           (apply
-             concat
-             (for [b (range (inc a) size)
-                   :let [sn-b (nth input b)]]
-               [(reduce-sn [sn-a sn-b])
-                (reduce-sn [sn-b sn-a])])))
-         (apply concat)
-         (map magnitude)
+           (for [b (range (inc a) size)
+                 :let [sn-b (nth input b)]]
+             [(magnitude (reduce-sn [sn-a sn-b]))
+              (magnitude (reduce-sn [sn-b sn-a]))]))
+         flatten
          (apply max))))
 
 
