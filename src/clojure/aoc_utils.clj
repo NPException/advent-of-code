@@ -180,6 +180,14 @@
       [col])))
 
 
+(defn sum-int-range
+  "Returns the sum of integers in the given range."
+  [^long from ^long to]
+  (/ (* (inc (- to from))
+        (+ from to))
+     2))
+
+
 (defn partitions
   "Generates a sequence of all possible options for
   how the number n can be split up into k numbers"

@@ -16,7 +16,7 @@
   [input]
   (let [[_ _ ^long y1] (parse input)
         max-dy (dec (- y1))]
-    (/ (* max-dy (inc max-dy)) 2)))
+    (u/sum-int-range 0 max-dy)))
 
 
 (defn reaches-x?
