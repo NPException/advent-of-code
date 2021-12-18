@@ -16,10 +16,7 @@
   [input]
   (let [[_ _ ^long y1] (parse input)
         max-dy (dec (- y1))]
-    (loop [y 0, dy max-dy]
-      (if (zero? dy)
-        y
-        (recur (+ y dy) (dec dy))))))
+    (/ (* max-dy (inc max-dy)) 2)))
 
 
 (defn reaches-x?
