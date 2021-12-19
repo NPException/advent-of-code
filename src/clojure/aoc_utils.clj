@@ -15,7 +15,7 @@
   (slurp (io/resource path)))
 
 
-(defn read-edn-lines
+(defn read-as-vector
   [input]
   (read-string (str "[" input "]")))
 
