@@ -139,6 +139,15 @@
     (if (pred x) x (recur pred remain))))
 
 
+(defn index-of
+  "Returns the index of the first element in coll which matches pred"
+  [pred coll]
+  (loop [coll coll
+         i 0]
+    (when-let [[e & more] (seq coll)]
+      (if (pred e) i (recur more (inc i))))))
+
+
 (defn update!
   "Same as 'update' but for transient maps"
   ([m k f]
