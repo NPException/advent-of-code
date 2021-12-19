@@ -180,6 +180,22 @@
       [col])))
 
 
+(defn combinations
+  "Generate a list of all possible n-sized tuple combinations in coll."
+  [n coll]
+  (let [coll (vec coll)
+        size (count coll)
+        comb-aux (fn comb-aux
+                   [m start]
+                   (if (= 1 m)
+                     (for [x (range start size)]
+                       (list (nth coll x)))
+                     (for [x (range start size)
+                           xs (comb-aux (dec m) (inc x))]
+                       (cons (nth coll x) xs))))]
+    (comb-aux n 0)))
+
+
 (defn sum-int-range
   "Returns the sum of integers in the given range."
   [^long from ^long to]
@@ -358,7 +374,7 @@
      (when (.createNewFile ns-file)
        (-> (slurp-resource "template_ns.edn")
            (str/replace #"%>.+?<%" {"%>year<%" (str year)
-                                       "%>day<%"  (str day)})
+                                    "%>day<%" (str day)})
            (#(spit ns-file %)))
        (println "Created Clojure namespace in " (.getPath ns-file))))))
 
