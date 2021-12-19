@@ -105,27 +105,33 @@
   (let [common-delta-ids (set/intersection (set (vals s1)) (set (vals s2)))]
     ;; there are 66 possible pairings for a list of 12 elements
     (when (>= (count common-delta-ids) 66)
-      (when-let [[rot delta] (find-transform (beacons-with-delta s1 common-delta-ids)
-                                             (beacons-with-delta s2 common-delta-ids))]
-        (->> (map #(apply-transform rot delta %) s2)
-             (into s1))))))
+      (when-let [[rot offset] (find-transform (beacons-with-delta s1 common-delta-ids)
+                                              (beacons-with-delta s2 common-delta-ids))]
+        [offset
+         (->> (map #(apply-transform rot offset %) s2)
+              (into s1))]))))
 
 
-(defn find-overlap
+(defn construct-overlap
   [scanner others]
   (loop [[other & more] others]
     (when other
-      (if-let [combined (combine-scanners scanner other)]
-        (cons combined (remove #{other} others))
+      (if-let [[offset combined] (combine-scanners scanner other)]
+        [offset (cons combined (remove #{other} others))]
         (recur more)))))
+
+(defn magic
+  [input]
+  (loop [[s & more] (map build-deltas (parse-input input))
+         offsets []]
+    (if more
+      (let [[offset scanners] (construct-overlap s more)]
+        (recur scanners (conj offsets offset)))
+      [s offsets])))
 
 (defn part-1
   [input]
-  (let [scanners (map build-deltas (parse-input input))
-        combined (loop [[s & more] scanners]
-                   (if more
-                     (recur (find-overlap s more))
-                     s))]
+  (let [[combined] (magic input)]
     (->> (keys combined)
          (mapcat seq)
          set
@@ -134,7 +140,13 @@
 
 (defn part-2
   [input]
-  )
+  (let [[_ offsets] (magic input)]
+    (->> (u/combinations 2 (cons [0 0 0] offsets))
+         (map (fn [[[x1 y1 z1] [x2 y2 z2]]]
+                (+ (u/abs (- x1 x2))
+                   (u/abs (- y1 y2))
+                   (u/abs (- z1 z2)))))
+         (apply max))))
 
 
 (comment
@@ -144,8 +156,8 @@
   (quick-bench (part-1 task-input))
 
   ;; Part 2
-  (part-2 test-input)                                       ; =>
-  (part-2 task-input)                                       ; =>
+  (part-2 test-input)                                       ; => 3621
+  (part-2 task-input)                                       ; => 13374
   (quick-bench (part-2 task-input))
 
   )
