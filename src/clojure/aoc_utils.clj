@@ -195,11 +195,11 @@
   (let [coll (vec coll)
         size (count coll)
         comb-aux (fn comb-aux
-                   [m start]
+                   [^long m ^long start]
                    (if (= 1 m)
                      (for [x (range start size)]
                        (list (nth coll x)))
-                     (for [x (range start size)
+                     (for [^long x (range start size)
                            xs (comb-aux (dec m) (inc x))]
                        (cons (nth coll x) xs))))]
     (comb-aux n 0)))

@@ -1,7 +1,6 @@
 (ns aoc-2021.day-21
   (:use [criterium.core])
-  (:require [clojure.string :as str]
-            [aoc-utils :as u])
+  (:require [aoc-utils :as u])
   (:import (java.util HashMap Map)))
 
 ;; --- Day 21: Dirac Dice --- https://adventofcode.com/2021/day/21
@@ -11,10 +10,8 @@
 
 (defn parse-input
   [^String input]
-  (let [^long i1 (str/index-of input \:)
-        ^long i2 (str/index-of input \: (inc i1))]
-    [(- (int (.charAt input (+ i1 2))) 49)                  ;; sub by 49 to get 0-based position
-     (- (int (.charAt input (+ i2 2))) 49)]))
+  [(- (int (.charAt input 28)) 49)                          ;; sub by 49 to get 0-based position
+   (- (int (.charAt input 58)) 49)])
 
 (defn part-1
   [input]
