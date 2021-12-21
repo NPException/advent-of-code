@@ -1,7 +1,8 @@
 (ns aoc-2021.day-21
   (:use [criterium.core])
   (:require [clojure.string :as str]
-            [aoc-utils :as u]))
+            [aoc-utils :as u])
+  (:import (java.util HashMap Map)))
 
 ;; --- Day 21: Dirac Dice --- https://adventofcode.com/2021/day/21
 
@@ -29,25 +30,28 @@
 
 (def dirac-rolls [[3 1] [4 3] [5 6] [6 7] [7 6] [8 3] [9 1]]) ;; die value, and number of combinations that result in that value
 
-(def play
-  (memoize
-    (fn [^long pos1 ^long pos2 ^long score1 ^long score2]
-      (if (>= score2 21)
-        [0 1]
-        (loop [wins1 0, wins2 0, roll-index 0]
-          (if (>= roll-index 7)
-            [wins1 wins2]
-            (let [[^long move ^long n] (dirac-rolls roll-index)
-                  pos1' (rem (+ pos1 move) 10)
-                  [^long w2 ^long w1] (play pos2 pos1' score2 (+ score1 (inc pos1')))]
-              (recur (+ wins1 (* n w1))
-                     (+ wins2 (* n w2))
-                     (inc roll-index)))))))))
+(defn play
+    ([[pos1 pos2]]
+     (play [pos1 pos2 0 0] (HashMap.)))
+    ([[^long pos1 ^long pos2 ^long score1 ^long score2] ^Map cache]
+     (if (>= score2 21)
+       [0 1]
+       (loop [wins1 0, wins2 0, roll-index 0]
+         (if (>= roll-index 7)
+           [wins1 wins2]
+           (let [[^long move ^long n] (dirac-rolls roll-index)
+                 pos1'  (rem (+ pos1 move) 10)
+                 args   [pos2 pos1' score2 (+ score1 (inc pos1'))]
+                 cached (.get cache args)
+                 [^long w2 ^long w1 :as r] (or cached (play args cache))]
+             (when-not cached (.put cache args r))
+             (recur (+ wins1 (* n w1))
+               (+ wins2 (* n w2))
+               (inc roll-index))))))))
 
 (defn part-2
   [input]
-  (let [[p1 p2] (parse-input input)]
-    (apply max (play p1 p2 0 0))))
+  (apply max (play (parse-input input))))
 
 
 (comment
