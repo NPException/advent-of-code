@@ -1,7 +1,6 @@
 (ns aoc-2021.day-22
   (:use [criterium.core])
   (:require [clojure.string :as str]
-            [clojure.java.math :as math]
             [aoc-utils :as u]))
 
 ;; --- Day 22: Reactor Reboot --- https://adventofcode.com/2021/day/22
@@ -13,24 +12,20 @@
 
 (defn parse-line
   [line]
-  (let [on? (str/starts-with? line "on")
-        [x1 x2 y1 y2 z1 z2] (mapv parse-long (re-seq #"-?\d+" line))]
-    {:on? on?, :x [x1 x2], :y [y1 y2], :z [z1 z2]}))
+  [(str/starts-with? line "on")
+   (mapv parse-long (re-seq #"-?\d+" line))])
 
 (defn parse-input
   [input]
   (mapv parse-line (str/split-lines input)))
 
+
 (defn create-check
-  [outside-fn {on?                 :on?
-               [^long x1 ^long x2] :x
-               [^long y1 ^long y2] :y
-               [^long z1 ^long z2] :z}]
+  [outside-fn [on? [x1 x2 y1 y2 z1 z2]]]
   (fn [^long x ^long y ^long z]
     (if (and (<= x1 x) (<= x x2) (<= y1 y) (<= y y2) (<= z1 z) (<= z z2))
       on?
       (outside-fn x y z))))
-
 
 (defn part-1
   [input]
@@ -44,9 +39,40 @@
          (count))))
 
 
+(defn intersection
+  [[ax1 ax2 ay1 ay2 az1 az2] [bx1 bx2 by1 by2 bz1 bz2]]
+  (let [x1 (max ax1 bx1)
+        x2 (min ax2 bx2)
+        y1 (max ay1 by1)
+        y2 (min ay2 by2)
+        z1 (max az1 bz1)
+        z2 (min az2 bz2)]
+    (when (and (<= x1 x2) (<= y1 y2) (<= z1 z2))
+      [x1 x2 y1 y2 z1 z2])))
+
+
+(defn build-cuboids
+  [cuboids [on? bounds-1 :as region]]
+  (cond-> (reduce
+            (fn [acc [on? bounds-2]]
+              (if-let [insect (intersection bounds-1 bounds-2)]
+                (conj acc [(not on?) insect])
+                acc))
+            cuboids
+            cuboids)
+    on? (conj region)))
+
+(defn volume
+  [[on? [x1 x2 y1 y2 z1 z2]]]
+  (* (if on? 1 -1)
+    (- (inc x2) x1) (- (inc y2) y1) (- (inc z2) z1)))
+
 (defn part-2
   [input]
-  )
+  (->> (parse-input input)
+       (reduce build-cuboids '())
+       (map volume)
+       (apply +)))
 
 
 (comment
@@ -57,9 +83,9 @@
   (quick-bench (part-1 task-input))
 
   ;; Part 2
-  (part-2 test-input-1)                                     ; =>
+  (part-2 test-input-1)                                     ; => 39769202357779
   (part-2 test-input-2)                                     ; => 2758514936282235
-  (part-2 task-input)                                       ; =>
+  (part-2 task-input)                                       ; => 1213461324555691
   (quick-bench (part-2 task-input))
 
   )
