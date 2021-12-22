@@ -20,25 +20,23 @@
   (mapv parse-line (str/split-lines input)))
 
 
-(defn intersection
-  [[ax1 ax2 ay1 ay2 az1 az2] [bx1 bx2 by1 by2 bz1 bz2]]
+(defn negate-intersect
+  "Add a negation zone for the intersection between the cuboids"
+  [[_ [ax1 ax2 ay1 ay2 az1 az2]]
+   zones
+   [on? [bx1 bx2 by1 by2 bz1 bz2]]]
   (let [x1 (max ax1 bx1), x2 (min ax2 bx2)
         y1 (max ay1 by1), y2 (min ay2 by2)
         z1 (max az1 bz1), z2 (min az2 bz2)]
-    (when (and (<= x1 x2) (<= y1 y2) (<= z1 z2))
-      [x1 x2 y1 y2 z1 z2])))
+    (if (and (<= x1 x2) (<= y1 y2) (<= z1 z2))
+      (conj zones [(not on?) [x1 x2 y1 y2 z1 z2]])
+      zones)))
 
 
-(defn build-cuboids
-  [cuboids [on? bounds-1 :as region]]
-  (cond-> (reduce
-            (fn [acc [on? bounds-2]]
-              (if-let [insect (intersection bounds-1 bounds-2)]
-                (conj acc [(not on?) insect])
-                acc))
-            cuboids
-            cuboids)
-    on? (conj region)))
+(defn build-zones
+  [zones [on? :as cuboid]]
+  (cond-> (reduce #(negate-intersect cuboid %1 %2) zones zones)
+    on? (conj cuboid)))
 
 (defn volume
   [[on? [x1 x2 y1 y2 z1 z2]]]
@@ -49,7 +47,7 @@
   [input adjust]
   (->> (parse-input input)
        adjust
-       (reduce build-cuboids '())
+       (reduce build-zones '())
        (map volume)
        (apply +)))
 
