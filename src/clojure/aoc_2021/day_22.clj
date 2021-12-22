@@ -20,33 +20,11 @@
   (mapv parse-line (str/split-lines input)))
 
 
-(defn create-check
-  [outside-fn [on? [x1 x2 y1 y2 z1 z2]]]
-  (fn [^long x ^long y ^long z]
-    (if (and (<= x1 x) (<= x x2) (<= y1 y) (<= y y2) (<= z1 z) (<= z z2))
-      on?
-      (outside-fn x y z))))
-
-(defn part-1
-  [input]
-  (let [regions (parse-input input)
-        active? (reduce create-check (constantly false) regions)]
-    (->> (for [x (range -50 51)
-               y (range -50 51)
-               z (range -50 51)
-               :when (active? x y z)]
-           true)
-         (count))))
-
-
 (defn intersection
   [[ax1 ax2 ay1 ay2 az1 az2] [bx1 bx2 by1 by2 bz1 bz2]]
-  (let [x1 (max ax1 bx1)
-        x2 (min ax2 bx2)
-        y1 (max ay1 by1)
-        y2 (min ay2 by2)
-        z1 (max az1 bz1)
-        z2 (min az2 bz2)]
+  (let [x1 (max ax1 bx1), x2 (min ax2 bx2)
+        y1 (max ay1 by1), y2 (min ay2 by2)
+        z1 (max az1 bz1), z2 (min az2 bz2)]
     (when (and (<= x1 x2) (<= y1 y2) (<= z1 z2))
       [x1 x2 y1 y2 z1 z2])))
 
@@ -67,12 +45,32 @@
   (* (if on? 1 -1)
     (- (inc x2) x1) (- (inc y2) y1) (- (inc z2) z1)))
 
-(defn part-2
-  [input]
+(defn solve
+  [input adjust]
   (->> (parse-input input)
+       adjust
        (reduce build-cuboids '())
        (map volume)
        (apply +)))
+
+
+(defn part-1
+  [input]
+  (solve input
+    (fn [regions]
+      (->> regions
+           (map (fn [[on? [x1 x2 y1 y2 z1 z2]]]
+                  (let [x1 (max -50 x1), x2 (min 50 x2)
+                        y1 (max -50 y1), y2 (min 50 y2)
+                        z1 (max -50 z1), z2 (min 50 z2)]
+                    (when (and (<= x1 x2) (<= y1 y2) (<= z1 z2))
+                      [on? [x1 x2 y1 y2 z1 z2]]))))
+           (filter some?)))))
+
+
+(defn part-2
+  [input]
+  (solve input identity))
 
 
 (comment
@@ -80,12 +78,12 @@
   (part-1 test-input-1)                                     ; => 590784
   (part-1 test-input-2)                                     ; => 474140
   (part-1 task-input)                                       ; => 524792
-  (quick-bench (part-1 task-input))
+  (quick-bench (part-1 task-input))                         ; 12,781121 ms
 
   ;; Part 2
   (part-2 test-input-1)                                     ; => 39769202357779
   (part-2 test-input-2)                                     ; => 2758514936282235
   (part-2 task-input)                                       ; => 1213461324555691
-  (quick-bench (part-2 task-input))
+  (quick-bench (part-2 task-input))                         ; 893,348927 ms
 
   )
