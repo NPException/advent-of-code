@@ -178,15 +178,21 @@
 
 
 (defn permutations
+  "Returns a lazy sequence of all possible
+  rearrangements for a collection of unique elements."
   [col]
-  (lazy-seq
-    (if (next col)
-      (apply concat
-             (for [x col]
-               (->> (remove #{x} col)
-                    permutations
-                    (map #(cons x %)))))
-      [col])))
+  (let [vcol (vec col)
+        indices ((fn iperms [indices]
+                   (lazy-seq
+                     (if (next indices)
+                       (apply concat
+                         (for [x indices]
+                           (->> (remove #(= % x) indices)
+                                iperms
+                                (map #(cons x %)))))
+                       [indices])))
+                 (range (count vcol)))]
+    (map #(mapv vcol %) indices)))
 
 
 (defn combinations
