@@ -17,19 +17,20 @@
 
 (defn solve
   [input goal-fn risk-fn]
-  (let [grid (parse-input input)
+  (let [grid  (parse-input input)
         width (count grid)
         [max :as goal] (goal-fn width)
-        path (u/A*-search [0 0] goal
-                          (fn [[x y]]
-                            (cond-> '()
-                              (> x 0) (conj [(dec x) y])
-                              (< x max) (conj [(inc x) y])
-                              (> y 0) (conj [x (dec y)])
-                              (< y max) (conj [x (inc y)])))
-                          (fn [_] 0)
-                          ;; cost: the risk at the neighbouring position
-                          #(risk-fn grid width %2))]
+        path  (u/A*-search
+                [0 0] #(= % goal)
+                (fn [[x y]]
+                  (cond-> '()
+                    (> x 0) (conj [(dec x) y])
+                    (< x max) (conj [(inc x) y])
+                    (> y 0) (conj [x (dec y)])
+                    (< y max) (conj [x (inc y)])))
+                (fn [_] 0)
+                ;; cost: the risk at the neighbouring position
+                #(risk-fn grid width %2))]
     (->> (map #(risk-fn grid width %) path)
          (drop 1)
          (apply +))))

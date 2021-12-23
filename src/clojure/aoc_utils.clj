@@ -270,7 +270,7 @@
 (defn A*-search
   "A* implementation translated from https://en.wikipedia.org/wiki/A*_search_algorithm#Pseudocode
   nil elements are not permitted. (might implement later)"
-  [start goal neighbours-fn heuristic-fn cost-fn]
+  [start goal? neighbours-fn heuristic-fn cost-fn]
   (let [came-from (HashMap.)                                ;; For node n, (came-from n) is the node immediately preceding it on the cheapest path from start to n currently known.
         g-score (HashMap.)                                  ;; <double> For node n, (g-score n) is the cost of the cheapest path from start to n currently known. (default: infinity)
         f-score (HashMap.)                                  ;; <double> For node n, (f-score n) is (g-score n) + (h n). (f-score n) represents our current best guess as to how short a path from start to finish can be if it goes through n.
@@ -286,10 +286,10 @@
     (loop []
       (when-some [current (.poll open-queue)]
         (.remove open-set current)
-        (if (= current goal)
+        (if (goal? current)
           ;; construct result
-          (loop [n goal
-                 path (list goal)]
+          (loop [n current
+                 path (list current)]
             (if-some [n (.get came-from n)]
               (recur n (conj path n))
               path))
