@@ -10,34 +10,30 @@
 
 (def costs {\A 1, \B 10, \C 100, \D 1000})
 
-(defn distances
-  [distance-map]
-  (mapv distance-map (range 15)))
-
 ;####################
 ;#8 9 10 11 12 13 14#
 ;####0##2##4##6######
 ;   #1##3##5##7#
 ;   ############
 
-;; spot format: [occupant goal [..neighbour-costs]]
+;; spot format: [occupant goal {..neighbour-costs}]
 (def spots
   (mapv
-    {0  [nil \A (distances {1 1, 9 2, 10 2})]
-     1  [nil \A (distances {0 1})]
-     2  [nil \B (distances {3 1, 10 2, 11 2})]
-     3  [nil \B (distances {2 1})]
-     4  [nil \C (distances {5 1, 11 2, 12 2})]
-     5  [nil \C (distances {4 1})]
-     6  [nil \D (distances {7 1, 12 2, 13 2})]
-     7  [nil \D (distances {6 1})]
-     8  [nil nil (distances {9 1})]
-     9  [nil nil (distances {8 1, 0 2, 10 2})]
-     10 [nil nil (distances {9 2, 0 2, 2 2, 11 2})]
-     11 [nil nil (distances {10 2, 2 2, 4 2, 12 2})]
-     12 [nil nil (distances {11 2, 4 2, 6 2, 13 2})]
-     13 [nil nil (distances {12 2, 6 2, 14 1})]
-     14 [nil nil (distances {13 1})]}
+    {0  [nil \A {1 1, 9 2, 10 2}]
+     1  [nil \A {0 1}]
+     2  [nil \B {3 1, 10 2, 11 2}]
+     3  [nil \B {2 1}]
+     4  [nil \C {5 1, 11 2, 12 2}]
+     5  [nil \C {4 1}]
+     6  [nil \D {7 1, 12 2, 13 2}]
+     7  [nil \D {6 1}]
+     8  [nil nil {9 1}]
+     9  [nil nil {8 1, 0 2, 10 2}]
+     10 [nil nil {9 2, 0 2, 2 2, 11 2}]
+     11 [nil nil {10 2, 2 2, 4 2, 12 2}]
+     12 [nil nil {11 2, 4 2, 6 2, 13 2}]
+     13 [nil nil {12 2, 6 2, 14 1}]
+     14 [nil nil {13 1}]}
     (range 15)))
 
 (defn start-state
@@ -62,9 +58,32 @@
     (println (str "  #" (e 1) \# (e 3) \# (e 5) \# (e 7) "#"))
     (println "  #########")))
 
+(defmacro nth-in [v is]
+  `(-> ~v ~@(map (fn [i] (list `nth i)) is)))
+
+(defn empty-neighbour?
+  [state neighbours]
+  (not (every?
+         (fn [[i _]] (nth-in state [i 0]))
+         neighbours)))
+
+(defn path-to-room
+  [state i]
+  ; TODO find path from hallway position i to goal-room
+  )
+
+(defn can-move?
+  [state i]
+  (let [[[amph cost] room neighbours] (state i)]
+    (and (or (zero? cost) (not= amph room))
+         (empty-neighbour? state neighbours)
+         (or room (path-to-room state i)))))
 
 (defn move-amphipod
-  [state i])
+  [state i]
+  (when (can-move? state i)
+    ;; TODO
+    ))
 
 (defn advance-state
   [state]
