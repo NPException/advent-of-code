@@ -24,7 +24,7 @@
                (str/join "#" (->> (map #(nth % 0) columns)
                                   (map #(get-in state [% 0] \.))))
                "###"))
-    (dotimes [i (dec depth)]
+    (dotimes [i (dec ^long depth)]
       (println (str "  #"
                  (str/join "#" (->> (map #(nth % (inc i)) columns)
                                     (map #(get-in state [% 0] \.))))
@@ -167,7 +167,7 @@
                room)))))
 
 (defn cost-factor
-  [x]
+  ^long [x]
   (case (int x)
     65 1                                                    ;; A
     66 10                                                   ;; B
@@ -178,12 +178,12 @@
   [hallways hallway? paths goals state pos]
   (when-not (done? goals state pos)
     (let [cost-index (dec (count state))
-          [goal cost-so-far id] (state pos)
+          [goal ^long cost-so-far id] (state pos)
           goal-path  (goal-path paths goals state pos goal)]
       (some->> (seq (cond-> (hallway-paths hallways hallway? paths state pos)
                       goal-path (conj goal-path)))
         (map (fn [path]
-               (let [[steps cost] path
+               (let [[steps ^long cost] path
                      target    (peek steps)
                      path-cost (* cost (cost-factor goal))]
                  (-> (assoc state pos nil)
@@ -199,14 +199,14 @@
                   cat))))
 
 (defn finished?
-  [spots state]
+  [spots rooms state]
   (every?
     #(= (nth-in state [% 0]) (nth-in spots [% 0]))
-    [0 1 2 3 4 5 6 7]))
+    rooms))
 
 (defn sum-energy
   [state]
-  (->> (take 8 state)
+  (->> (drop-last 8 state)
        (map second)
        (apply +)))
 
@@ -216,32 +216,32 @@
        (keep #(when-let [[goal] (nth state %)]
                 [% goal]))
        (reduce
-         (fn [acc [pos goal]]
-           (let [[end door] (goals goal)]
-             (if (or (= pos end) (= pos door))
+         (fn [^long acc [pos goal]]
+           (let [room (goals goal)
+                 door (peek room)]
+             (if (or (= pos door) (done? goals state pos))
                acc
-               (+ acc (* (nth (paths [pos door]) 1)
-                        (cost-factor goal))))))
+               (let [^long path-length (nth (paths [pos door]) 1)]
+                 (+ acc (* path-length (cost-factor goal)))))))
          0)))
 
 
 (defn solve
   [input spots lines-transform]
-  ; (def goals {\A [1 0], \B [3 2], \C [5 4], \D [7 6]})        ;; goal spots for each amphipod type, ordered by priority
+  ; goals -> {\A [1 0], \B [3 2], \C [5 4], \D [7 6]}  goal spots for each amphipod type, ordered by priority
   (let [positions (vec (range (count spots)))
         hallways  (vec (take-last 7 positions))
         hallway?  (set hallways)
-        rooms     (drop-last 7 positions)
+        rooms     (vec (drop-last 7 positions))
         goals     (->> (partition (/ (count rooms) 4) rooms)
                        (map (comp vec reverse))
                        (zipmap [\A \B \C \D]))
         paths     (generate-paths spots)
         start (start-state input spots lines-transform)]
     (->> (u/A*-search start
-           #(finished? spots %)
+           #(finished? spots rooms %)
            #(advance-state positions hallways hallway? paths goals %)
            #(estimate-finish-cost positions paths goals %)
-           #_(fn [_] 0)
            #(peek %2))
          last
          sum-energy)))
@@ -269,8 +269,8 @@
   (quick-bench (part-1 task-input))
 
   ;; Part 2
-  (part-2 test-input)                                       ; => 44169
-  (part-2 task-input)                                       ; =>
+  (part-2 test-input)                                       ; => 44169 -> 124,780 ms
+  (part-2 task-input)                                       ; => 47665 ->  30,252 ms
   (quick-bench (part-2 task-input))
 
   )
