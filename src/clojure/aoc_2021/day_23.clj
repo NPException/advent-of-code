@@ -8,7 +8,18 @@
 (def task-input (u/slurp-resource "inputs/aoc_2021/day-23.txt"))
 (def test-input "#############\n#...........#\n###B#C#B#D###\n  #A#D#C#A#\n  #########")
 
-(def costs {\A 1, \B 10, \C 100, \D 1000})
+(defmacro nth-in [v is]
+  `(-> ~v ~@(map (fn [i] (list `nth i)) is)))
+
+(defn print-state
+  [state]
+  (let [e #(-> (nth-in state [% 0]) (or \.))]
+    (println "#############")
+    (println (str \# (e 8) (e 9) \. (e 10) \. (e 11) \. (e 12) \. (e 13) (e 14) \#))
+    (println (str "###" (e 0) \# (e 2) \# (e 4) \# (e 6) "###"))
+    (println (str "  #" (e 1) \# (e 3) \# (e 5) \# (e 7) "#"))
+    (println "  #########  " (e 15))
+    (println)))
 
 ;####################
 ;#8 9 10 11 12 13 14#
@@ -16,25 +27,31 @@
 ;   #1##3##5##7#
 ;   ############
 
-;; spot format: [occupant goal {..neighbour-costs}]
+(def positions (vec (range 15)))
+(def hallways (vec (drop 8 positions)))
+
+;; spot format: [goal {..neighbour-costs}]
 (def spots
   (mapv
-    {0  [nil \A {1 1, 9 2, 10 2}]
-     1  [nil \A {0 1}]
-     2  [nil \B {3 1, 10 2, 11 2}]
-     3  [nil \B {2 1}]
-     4  [nil \C {5 1, 11 2, 12 2}]
-     5  [nil \C {4 1}]
-     6  [nil \D {7 1, 12 2, 13 2}]
-     7  [nil \D {6 1}]
-     8  [nil nil {9 1}]
-     9  [nil nil {8 1, 0 2, 10 2}]
-     10 [nil nil {9 2, 0 2, 2 2, 11 2}]
-     11 [nil nil {10 2, 2 2, 4 2, 12 2}]
-     12 [nil nil {11 2, 4 2, 6 2, 13 2}]
-     13 [nil nil {12 2, 6 2, 14 1}]
-     14 [nil nil {13 1}]}
-    (range 15)))
+    {0  [\A {1 1, 9 2, 10 2}]
+     1  [\A {0 1}]
+     2  [\B {3 1, 10 2, 11 2}]
+     3  [\B {2 1}]
+     4  [\C {5 1, 11 2, 12 2}]
+     5  [\C {4 1}]
+     6  [\D {7 1, 12 2, 13 2}]
+     7  [\D {6 1}]
+     8  [nil {9 1}]
+     9  [nil {8 1, 0 2, 10 2}]
+     10 [nil {9 2, 0 2, 2 2, 11 2}]
+     11 [nil {10 2, 2 2, 4 2, 12 2}]
+     12 [nil {11 2, 4 2, 6 2, 13 2}]
+     13 [nil {12 2, 6 2, 14 1}]
+     14 [nil {13 1}]}
+    positions))
+
+(def COST-INDEX 15)
+
 
 (defn start-state
   [input]
@@ -42,92 +59,135 @@
        (drop 2) (take 2)
        (map #(map first (re-seq #"A|B|C|D" %)))
        (apply mapcat vector)
-       (map-indexed vector)
-       (reduce
-         (fn [acc [i v]]
-           (assoc-in acc [i 0] [v 0 i]))                    ;; amphipod: [goal cost-so-far id]
-         spots)))
+       (map-indexed #(vector %2 0 %1))                      ;; amphipod: [goal cost-so-far id]
+       (#(concat % (repeat nil)))
+       (take 15)
+       vec
+       (#(conj % 0))))                                      ;; last state index is cost for last step
 
 
-(defn print-state
-  [state]
-  (let [e (fn [i] (-> i state first first (or \.)))]
-    (println "#############")
-    (println (str \# (e 8) (e 9) \. (e 10) \. (e 11) \. (e 12) \. (e 13) (e 14) \#))
-    (println (str "###" (e 0) \# (e 2) \# (e 4) \# (e 6) "###"))
-    (println (str "  #" (e 1) \# (e 3) \# (e 5) \# (e 7) "#"))
-    (println "  #########")))
+(defn path-step-count
+  [path]
+  (->> (partition 2 1 path)
+       (map (fn [[from to]]
+              ((nth-in spots [from 1]) to)))
+       (apply +)))
 
-(defmacro nth-in [v is]
-  `(-> ~v ~@(map (fn [i] (list `nth i)) is)))
+(defn find-path
+  [[from to]]
+  (let [path  (vec (u/A*-search from
+                     #(= % to)
+                     #(keys (nth-in spots [% 1]))
+                     (constantly 0)
+                     #((nth-in spots [%1 1]) %2)))
+        steps (path-step-count path)]
+    [[[from to] [path steps]]
+     [[to from] [(vec (rseq path)) steps]]]))
 
-(defn empty-neighbour?
-  [state neighbours]
-  (not (every?
-         (fn [[i _]] (nth-in state [i 0]))
-         neighbours)))
+(def paths
+  "All possible paths for [from to]"
+  (->> (u/combinations 2 positions)
+       (mapcat find-path)
+       (into {})))
 
-(defn path-to-goal
-  [state i]
-  ; TODO find path from hallway position i to goal-room
-  )
+(def hallway? (set hallways))
 
-(defn can-move?
-  [state i]
-  (let [[[goal cost] room neighbours] (state i)]
-    (and (or (zero? cost) (not= goal room))
-         (empty-neighbour? state neighbours)
-         (or room (path-to-goal state i)))))
+(def goals {\A [1 0], \B [3 2], \C [5 4], \D [7 6]})        ;; goal spots for each amphipod type, ordered by priority
+
+(defn free-path
+  [state [steps :as path]]
+  (when (every?
+          #(nil? (nth-in state [% 0]))
+          (subvec steps 1))                                 ;; ignore the start of the path, since that's the current amphipod position
+    path))
+
+(defn goal-path
+  "Return a valid path from the given position to the desired goal room"
+  [state from goal]
+  (let [[end door] (goals goal)
+        [other-amph-goal] (state end)]
+    (when (and (nil? (state door))
+               (or (nil? other-amph-goal) (= goal other-amph-goal)))
+      (or (free-path state (paths [from end]))
+          (free-path state (paths [from door]))))))
+
+(defn hallway-paths
+  "Return all valid paths from a room into the hallway"
+  [state from]
+  (when-not (hallway? from)
+    (keep #(free-path state (paths [from %])) hallways)))
+
+(defn done?
+  [state pos]
+  (let [[goal] (state pos)
+        [end door] (goals goal)]
+    (or (= pos end)
+        (and (= pos door)
+             (= goal (nth-in state [end 0]))))))
+
+(def cost-factor {\A 1, \B 10, \C 100, \D 1000})
 
 (defn move-amphipod
-  [state i]
-  (when (can-move? state i)
-    ;; TODO
-    ))
+  [state pos]
+  (when-not (done? state pos)
+    (let [[goal cost-so-far id] (state pos)
+          goal-path (goal-path state pos goal)]
+      (some->> (seq (cond-> (hallway-paths state pos)
+                      goal-path (conj goal-path)))
+        (map (fn [path]
+               (let [[steps cost] path
+                     target    (peek steps)
+                     path-cost (* cost (cost-factor goal))]
+                 (-> (assoc state pos nil)
+                     (assoc target [goal (+ cost-so-far path-cost) id])
+                     (assoc COST-INDEX path-cost)))))))))
 
 (defn advance-state
   [state]
-  (->> (range 15)
+  (->> positions
        (into [] (comp
-                  (filter #(first (state %)))
+                  (filter #(state %))
                   (keep #(move-amphipod state %))
                   cat))))
 
 (defn finished?
   [state]
   (every?
-    (fn [[[x] goal]] (= x goal))
-    (take 8 state)))
-
-#_(defn finished?
-    [state]
-    (defn finished?
-      [state]
-      (and (let [[[v] goal] (state 0)] (= v goal))
-           (let [[[v] goal] (state 1)] (= v goal))
-           (let [[[v] goal] (state 2)] (= v goal))
-           (let [[[v] goal] (state 3)] (= v goal))
-           (let [[[v] goal] (state 4)] (= v goal))
-           (let [[[v] goal] (state 5)] (= v goal))
-           (let [[[v] goal] (state 6)] (= v goal))
-           (let [[[v] goal] (state 7)] (= v goal)))))
+    #(= (nth-in state [% 0]) (nth-in spots [% 0]))
+    [0 1 2 3 4 5 6 7]))
 
 (defn sum-energy
   [state]
-  (-> (take 8 state)
-      (map #(get-in % [0 1]))
-      (apply +)))
+  (->> (take 8 state)
+       (map second)
+       (apply +)))
+
+(defn estimate-finish-cost
+  [state]
+  (->> positions
+       (keep #(when-let [[goal] (nth state %)]
+               [% goal]))
+       (reduce
+         (fn [acc [pos goal]]
+           (let [[end door] (goals goal)]
+             (if (or (= pos end) (= pos door))
+               acc
+               (+ acc (* (nth (paths [pos door]) 1)
+                        (cost-factor goal))))))
+         0)))
+
 
 (defn part-1
   [input]
-  (loop [[state & more-states] [(start-state input)]
-         end-states '()]
-    (if state
-      (let [{done true, more false} (group-by finished? (advance-state state))]
-        (recur (concat more-states more) (concat end-states done)))
-      (->> end-states
-           (map sum-energy)
-           (apply min)))))
+  (->> (u/A*-search (start-state input)
+         finished?
+         advance-state
+         estimate-finish-cost
+         #_(fn [_] 0)
+         #(nth %2 COST-INDEX))
+       last
+       sum-energy))
+
 
 (defn part-2
   [input]
@@ -136,8 +196,8 @@
 
 (comment
   ;; Part 1
-  (part-1 test-input)                                       ; =>
-  (part-1 task-input)                                       ; =>
+  (part-1 test-input)                                       ; => 12521
+  (part-1 task-input)                                       ; => 19167
   (quick-bench (part-1 task-input))
 
   ;; Part 2
