@@ -24,31 +24,31 @@
 (defmulti compile first)
 
 (defmethod compile 'inp [[_ r]]
-  `(let [^long ~r (nom-num ~'inputs)
-         ~'inputs (next ~'inputs)]))
+  `[^long ~r (nom-num ~'inputs)
+    ~'inputs (next ~'inputs)])
 
 (defmethod compile 'add [[_ a b]]
-  `(let [~a (+ ~a ~b)]))
+  `[~a (+ ~a ~b)])
 
 (defmethod compile 'mul [[_ a b]]
-  `(let [~a (* ~a ~b)]))
+  `[~a (* ~a ~b)])
 
 (defmethod compile 'div [[_ a b]]
-  `(let [~a (quot ~a ~b)]))
+  `[~a (quot ~a ~b)])
 
 (defmethod compile 'mod [[_ a b]]
-  `(let [~a (rem ~a ~b)]))
+  `[~a (rem ~a ~b)])
 
-(defmethod compile 'mod [[_ a b]]
-  `(let [~a (if (= ~a ~b) 1 0)]))
+(defmethod compile 'eql [[_ a b]]
+  `[~a (if (= ~a ~b) 1 0)])
 
 
 (defn compile-alu
   [input]
   `(fn [~'inputs]
-     (let [~'w 0, ~'x 0, ~'y 0, ~'z 0, ~'inputs (seq ~'inputs)]
-       (->> ~'{:w w, :x x, :y y, :z z}
-            ~@(map compile (rseq (parse-input input)))))))
+     (let [~'w 0, ~'x 0, ~'y 0, ~'z 0, ~'inputs (seq ~'inputs)
+           ~@(mapcat compile (parse-input input))]
+       ~'{:w w, :x x, :y y, :z z})))
 
 (defn part-1
   [input]
