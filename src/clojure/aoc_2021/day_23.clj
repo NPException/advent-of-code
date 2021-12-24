@@ -45,7 +45,7 @@
        (map-indexed vector)
        (reduce
          (fn [acc [i v]]
-           (assoc-in acc [i 0] [v 0]))
+           (assoc-in acc [i 0] [v 0 i]))                    ;; amphipod: [goal cost-so-far id]
          spots)))
 
 
@@ -67,17 +67,17 @@
          (fn [[i _]] (nth-in state [i 0]))
          neighbours)))
 
-(defn path-to-room
+(defn path-to-goal
   [state i]
   ; TODO find path from hallway position i to goal-room
   )
 
 (defn can-move?
   [state i]
-  (let [[[amph cost] room neighbours] (state i)]
-    (and (or (zero? cost) (not= amph room))
+  (let [[[goal cost] room neighbours] (state i)]
+    (and (or (zero? cost) (not= goal room))
          (empty-neighbour? state neighbours)
-         (or room (path-to-room state i)))))
+         (or room (path-to-goal state i)))))
 
 (defn move-amphipod
   [state i]
