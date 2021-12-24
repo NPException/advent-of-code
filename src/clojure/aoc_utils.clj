@@ -16,6 +16,7 @@
 
 
 (defn read-as-vector
+  "Surrounds the given string with [ and ], then reads it as edn."
   [input]
   (read-string (str "[" input "]")))
 
