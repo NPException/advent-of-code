@@ -13,11 +13,22 @@
 
 (defn print-state
   [state]
-  (let [e #(-> (nth-in state [% 0]) (or \.))]
+  (let [rooms (range (- (count state) 8))
+        n (count rooms)
+        depth (/ n 4)
+        columns (partition depth rooms)
+        e #(-> (nth-in state [% 0]) (or \.))]
     (println "#############")
-    (println (str \# (e 8) (e 9) \. (e 10) \. (e 11) \. (e 12) \. (e 13) (e 14) \#))
-    (println (str "###" (e 0) \# (e 2) \# (e 4) \# (e 6) "###"))
-    (println (str "  #" (e 1) \# (e 3) \# (e 5) \# (e 7) "#"))
+    (println (str \# (e n) (e (+ n 1)) \. (e (+ n 2)) \. (e (+ n 3)) \. (e (+ n 4)) \. (e (+ n 5)) (e (+ n 6)) \#))
+    (println (str "###"
+               (str/join "#" (->> (map #(nth % 0) columns)
+                                  (map #(get-in state [% 0] \.))))
+               "###"))
+    (dotimes [i (dec depth)]
+      (println (str "  #"
+                 (str/join "#" (->> (map #(nth % (inc i)) columns)
+                                    (map #(get-in state [% 0] \.))))
+                 "#")))
     (println "  #########  " (peek state))
     (println)))
 
@@ -131,13 +142,13 @@
 (defn goal-path
   "Return a valid path from the given position to the desired goal room"
   [paths goals state from goal]
-  ;; TODO
-  (let [[end door] (goals goal)
-        [other-amph-goal] (state end)]
+  (let [room (goals goal)
+        door (peek room)]
     (when (and (nil? (state door))
-               (or (nil? other-amph-goal) (= goal other-amph-goal)))
-      (or (free-path state (paths [from end]))
-          (free-path state (paths [from door]))))))
+               (every? #(let [g (some-> (nth state %) (nth 0))]
+                          (or (nil? g) (= g goal)))
+                 room))
+      (some #(free-path state (paths [from %])) room))))
 
 (defn hallway-paths
   "Return all valid paths from a room into the hallway"
@@ -147,12 +158,13 @@
 
 (defn done?
   [goals state pos]
-  ;; TODO
   (let [[goal] (state pos)
-        [end door] (goals goal)]
+        [end & more :as room] (goals goal)]
     (or (= pos end)
-        (and (= pos door)
-             (= goal (nth-in state [end 0]))))))
+        (and (some #(= % pos) more)
+             (every? #(let [g (some-> (nth state %) (nth 0))]
+                        (or (nil? g) (= g goal)))
+               room)))))
 
 (defn cost-factor
   [x]
@@ -217,14 +229,15 @@
   [input spots lines-transform]
   ; (def goals {\A [1 0], \B [3 2], \C [5 4], \D [7 6]})        ;; goal spots for each amphipod type, ordered by priority
   (let [positions (vec (range (count spots)))
-        hallways (vec (take-last 7 positions))
-        hallway? (set hallways)
-        rooms (drop-last 7 positions)
-        goals (->> (partition (/ (count rooms) 4) rooms)
-                   (map (comp vec reverse))
-                   (zipmap [\A \B \C \D]))
-        paths (generate-paths spots)]
-    (->> (u/A*-search (start-state input spots lines-transform)
+        hallways  (vec (take-last 7 positions))
+        hallway?  (set hallways)
+        rooms     (drop-last 7 positions)
+        goals     (->> (partition (/ (count rooms) 4) rooms)
+                       (map (comp vec reverse))
+                       (zipmap [\A \B \C \D]))
+        paths     (generate-paths spots)
+        start (start-state input spots lines-transform)]
+    (->> (u/A*-search start
            #(finished? spots %)
            #(advance-state positions hallways hallway? paths goals %)
            #(estimate-finish-cost positions paths goals %)
