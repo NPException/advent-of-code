@@ -2,7 +2,6 @@
   (:use [criterium.core])
   (:refer-clojure :exclude [compile])
   (:require [clojure.string :as str]
-            [clojure.java.math :as math]
             [aoc-utils :as u]))
 
 ;; --- Day 24: Arithmetic Logic Unit --- https://adventofcode.com/2021/day/24
@@ -19,6 +18,10 @@
 (defn nom-num
   ^long [inputs]
   (first inputs))
+
+(defn digits
+  [n]
+  (mapv #(- (int %) 48) (str n)))
 
 
 (defmulti compile first)
@@ -44,31 +47,36 @@
 
 
 (defn compile-alu
-  [input]
+  [instructions]
   `(fn [~'inputs]
      (let [~'w 0, ~'x 0, ~'y 0, ~'z 0, ~'inputs (seq ~'inputs)
-           ~@(mapcat compile (parse-input input))]
+           ~@(mapcat compile instructions)]
        ~'{:w w, :x x, :y y, :z z})))
 
+
+(def task-alu (eval (compile-alu (parse-input task-input))))
+(def test-alu (eval (compile-alu (parse-input test-input))))
+
+
 (defn part-1
-  [input]
-  )
+  [alu]
+  (alu (digits 13579246899999)))
 
 
 (defn part-2
-  [input]
+  [alu]
   )
 
 
 (comment
   ;; Part 1
-  (part-1 test-input)                                       ; =>
-  (part-1 task-input)                                       ; =>
-  (quick-bench (part-1 task-input))
+  (test-alu [13])                                           ; => {:w 1, :x 1, :y 0, :z 1}
+  (part-1 task-alu)                                         ; =>
+  (quick-bench (part-1 task-alu))
 
   ;; Part 2
-  (part-2 test-input)                                       ; =>
-  (part-2 task-input)                                       ; =>
-  (quick-bench (part-2 task-input))
+  (part-2 test-alu)                                         ; =>
+  (part-2 task-alu)                                         ; =>
+  (quick-bench (part-2 task-alu))
 
   )
