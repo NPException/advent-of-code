@@ -151,10 +151,10 @@
       (some #(free-path state (paths [from %])) room))))
 
 (defn hallway-paths
-  "Return all valid paths from a room into the hallway"
+  "Return all valid paths from a room into the hallway, or nil if there are no valid paths"
   [hallways hallway? paths state from]
   (when-not (hallway? from)
-    (keep #(free-path state (paths [from %])) hallways)))
+    (seq (keep #(free-path state (paths [from %])) hallways))))
 
 (defn done?
   [goals state pos]
@@ -180,8 +180,9 @@
     (let [cost-index (dec (count state))
           [goal ^long cost-so-far id] (state pos)
           goal-path  (goal-path paths goals state pos goal)]
-      (some->> (seq (cond-> (hallway-paths hallways hallway? paths state pos)
-                      goal-path (conj goal-path)))
+      (some->> (if goal-path
+                 [goal-path]
+                 (hallway-paths hallways hallway? paths state pos))
         (map (fn [path]
                (let [[steps ^long cost] path
                      target    (peek steps)
@@ -269,8 +270,8 @@
   (quick-bench (part-1 task-input))
 
   ;; Part 2
-  (part-2 test-input)                                       ; => 44169 -> 124,780 ms
-  (part-2 task-input)                                       ; => 47665 ->  30,252 ms
+  (part-2 test-input)                                       ; => 44169 -> ~23s
+  (part-2 task-input)                                       ; => 47665 -> ~19s
   (quick-bench (part-2 task-input))
 
   )
