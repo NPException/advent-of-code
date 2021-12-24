@@ -134,21 +134,29 @@
 
 (defn free-path
   [state [steps :as path]]
+  "Returns the given path if it is free of obstacles, otherwise returns nil."
   (when (every?
           #(nil? (nth-in state [% 0]))
           (subvec steps 1))                                 ;; ignore the start of the path, since that's the current amphipod position
     path))
 
+(defn append-step
+  [[path ^long length] pos]
+  [(conj path pos) (inc length)])
+
 (defn goal-path
   "Return a valid path from the given position to the desired goal room"
   [paths goals state from goal]
-  (let [room (goals goal)
-        door (peek room)]
+  (let [[door & more] (rseq (goals goal))]
     (when (and (nil? (state door))
                (every? #(let [g (some-> (nth state %) (nth 0))]
                           (or (nil? g) (= g goal)))
-                 room))
-      (some #(free-path state (paths [from %])) room))))
+                 more))
+      (when-let [path (free-path state (paths [from door]))]
+        (reduce
+          append-step
+          path
+          (take-while #(nil? (nth state %)) more))))))
 
 (defn hallway-paths
   "Return all valid paths from a room into the hallway, or nil if there are no valid paths"
@@ -184,9 +192,9 @@
                  [goal-path]
                  (hallway-paths hallways hallway? paths state pos))
         (map (fn [path]
-               (let [[steps ^long cost] path
+               (let [[steps ^long length] path
                      target    (peek steps)
-                     path-cost (* cost (cost-factor goal))]
+                     path-cost (* length (cost-factor goal))]
                  (-> (assoc state pos nil)
                      (assoc target [goal (+ cost-so-far path-cost) id])
                      (assoc cost-index path-cost)))))))))
@@ -270,8 +278,8 @@
   (quick-bench (part-1 task-input))
 
   ;; Part 2
-  (part-2 test-input)                                       ; => 44169 -> ~23s
-  (part-2 task-input)                                       ; => 47665 -> ~19s
+  (part-2 test-input)                                       ; => 44169 -> ~21s
+  (part-2 task-input)                                       ; => 47665 -> ~17s
   (quick-bench (part-2 task-input))
 
   )
