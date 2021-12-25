@@ -31,13 +31,17 @@
     ~'inputs (next ~'inputs)])
 
 (defmethod compile 'add [[_ a b]]
-  `[~a (+ ~a ~b)])
+  (when-not (= b 0)
+    `[~a (+ ~a ~b)]))
 
 (defmethod compile 'mul [[_ a b]]
-  `[~a (* ~a ~b)])
+  (cond
+    (= b 0) `[~a 0]
+    (not= b 1) `[~a (* ~a ~b)]))
 
 (defmethod compile 'div [[_ a b]]
-  `[~a (quot ~a ~b)])
+  (when-not (= b 1)
+    `[~a (quot ~a ~b)]))
 
 (defmethod compile 'mod [[_ a b]]
   `[~a (rem ~a ~b)])
