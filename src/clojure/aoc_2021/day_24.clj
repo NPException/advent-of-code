@@ -58,29 +58,30 @@
        ~'{:w w, :x x, :y y, :z z})))
 
 
-(def task-alu (eval (compile-alu (parse-input task-input))))
+(def alu (eval (compile-alu (parse-input task-input))))
 (def test-alu (eval (compile-alu (parse-input test-input))))
 
 
 (defn part-1
-  [alu]
-  (alu (digits 13579246899999)))
+  []
+  )
 
 
 (defn part-2
-  [alu]
+  []
   )
 
 
 (comment
   ;; Part 1
   (test-alu [13])                                           ; => {:w 1, :x 1, :y 0, :z 1}
-  (part-1 task-alu)                                         ; =>
-  (quick-bench (part-1 task-alu))
+  (alu (digits 13579246899999))                        ; => {:w 9, :x 0, :y 0, :z 87602628}
+  (part-1)                                                  ; =>
+  (quick-bench (part-1))
 
   ;; Part 2
   (part-2 test-alu)                                         ; =>
-  (part-2 task-alu)                                         ; =>
-  (quick-bench (part-2 task-alu))
+  (part-2)                                                  ; =>
+  (quick-bench (part-2))
 
   )
