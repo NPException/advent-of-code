@@ -8,8 +8,6 @@
 
 (def task-input (u/slurp-resource "inputs/aoc_2021/day-24.txt"))
 
-(def test-input "inp w\nadd z w\nmod z 2\ndiv w 2\nadd y w\nmod y 2\ndiv w 2\nadd x w\nmod x 2\ndiv w 2\nmod w 2")
-
 (defn parse-input
   [input]
   (->> (str/split-lines input)
@@ -18,11 +16,6 @@
 (defn nom-num
   ^long [inputs]
   (first inputs))
-
-(defn digits
-  [n]
-  (mapv #(- (int %) 48) (str n)))
-
 
 (defmulti compile first)
 
@@ -58,30 +51,59 @@
        ~'{:w w, :x x, :y y, :z z})))
 
 
+;; NOTE: I keep the ALU around even though we didn't actually need it.
 (def alu (eval (compile-alu (parse-input task-input))))
-(def test-alu (eval (compile-alu (parse-input test-input))))
 
 
-(defn part-1
+;cond
+;	d = 0 -> x&y [1..9]
+;	d < 0 ->
+;		x = [10-maxy..9]
+;		y = [1..9+d]
+; d > 0 ->
+; 	x = [1..9-d]
+; 	y = [10-maxx..9]
+
+(defn ranges
+  [^long d]
+  (cond
+    (zero? d) [[1 9] [1 9]]
+    (neg? d) [[(- 10 (+ 9 d)) 9]
+              [1 (+ 9 d)]]
+    :else [[1 (- 9 d)]
+           [(- 10 (- 9 d)) 9]]))
+
+(defn process-block
+  [[stack answer] [i [a ^long b c]]]
+  (if (= a 1)
+    [(conj stack [i c]) answer]
+    (let [[partner ^long c] (peek stack)
+          [r1 r2] (ranges (+ c b))]
+      [(pop stack)
+       (-> (assoc answer partner r1)
+           (assoc i r2))])))
+
+
+(defn min-max
   []
-  )
-
-
-(defn part-2
-  []
-  )
+  (->> (partition 18 (parse-input task-input))
+       (map (juxt #(nth % 4) #(nth % 5) #(nth % 15)))
+       (map #(mapv last %))
+       (map-indexed vector)
+       (reduce process-block [[] {}])
+       second
+       (#(map % (range 14)))
+       ((juxt
+          #(str/join (mapv first %))
+          #(str/join (mapv second %))))))
 
 
 (comment
   ;; Part 1
-  (test-alu [13])                                           ; => {:w 1, :x 1, :y 0, :z 1}
-  (alu (digits 13579246899999))                        ; => {:w 9, :x 0, :y 0, :z 87602628}
-  (part-1)                                                  ; =>
-  (quick-bench (part-1))
+  (last (min-max))                                          ; => 99911993949684
+  (quick-bench (min-max))
 
   ;; Part 2
-  (part-2 test-alu)                                         ; =>
-  (part-2)                                                  ; =>
-  (quick-bench (part-2))
+  (first (min-max))                                         ; => 62911941716111
 
   )
