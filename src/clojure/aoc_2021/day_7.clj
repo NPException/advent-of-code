@@ -11,7 +11,7 @@
 (defn realign-crabs
   [input target calc-fuel]
   (transduce (comp (map #(- target %))
-                   (map #(Math/abs ^long %))
+                   (map #(abs ^long %))
                    (map calc-fuel))
              + input))
 

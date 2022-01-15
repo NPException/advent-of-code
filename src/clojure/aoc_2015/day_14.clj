@@ -1,6 +1,5 @@
 (ns aoc-2015.day-14
   (:require [clojure.string :as string]
-            [clojure.java.math :as math]
             [aoc-utils :as u]))
 
 ;; --- Day 14: Reindeer Olympics --- https://adventofcode.com/2015/day/14
