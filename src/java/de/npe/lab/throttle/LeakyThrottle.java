@@ -5,7 +5,7 @@ import java.util.function.Supplier;
 
 /**
  * Decrements the used up amount continuously over time.
- * This means there is now fixed time window which resets the amount.
+ * This means there is no fixed time window which resets the amount.
  * Instead, the entire amount can be exhausted in a burst,
  * and then can continue in the throttled manner.
  */
