@@ -18,7 +18,8 @@ public final class WindowThrottle implements Throttle {
 	public WindowThrottle(long amount, long time, TimeUnit unit) {
 		this.amount = amount;
 		this.time = unit.toNanos(time);
-		start = System.nanoTime();
+		// ensure that the first call to `fetch` starts a new window
+		start = System.nanoTime() - this.time;
 	}
 
 	@Override

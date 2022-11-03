@@ -16,9 +16,9 @@ public final class LeakyThrottle implements Throttle {
 	private long start;
 	private long used;
 
-	public LeakyThrottle(long amount, long time, TimeUnit unit) {
-		this.amount = amount;
-		decTime = unit.toNanos(time) / amount;
+	public LeakyThrottle(long bucketSize, long callsPerTimeUnit, TimeUnit unit) {
+		this.amount = bucketSize > 0 ? bucketSize : 1;
+		decTime = unit.toNanos(1) / callsPerTimeUnit;
 		start = System.nanoTime();
 	}
 
