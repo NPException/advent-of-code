@@ -20,7 +20,7 @@
 (defn delta-entry
   [[a b]]
   [#{a b}
-   (->> (map #(u/abs (- %1 %2)) a b)
+   (->> (map #(abs (- %1 %2)) a b)
         sort
         (map-indexed #(bit-shift-left %2 (* %1 11)))        ;; shift over by 11 bits (2028), since no delta can be larger than 2000
         (apply bit-or))])
@@ -143,9 +143,9 @@
   (let [[_ offsets] (magic input)]
     (->> (u/combinations 2 (cons [0 0 0] offsets))
          (map (fn [[[x1 y1 z1] [x2 y2 z2]]]
-                (+ (u/abs (- x1 x2))
-                   (u/abs (- y1 y2))
-                   (u/abs (- z1 z2)))))
+                (+ (abs (- x1 x2))
+                   (abs (- y1 y2))
+                   (abs (- z1 z2)))))
          (apply max))))
 
 

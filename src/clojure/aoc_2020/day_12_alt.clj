@@ -17,7 +17,7 @@
 
 (defn distance-travelled
   [{:keys [N E] :as _ferry}]
-  (+ (u/abs N) (u/abs E)))
+  (+ (abs N) (abs E)))
 
 (defn run-ferry
   [input ferry commands]
