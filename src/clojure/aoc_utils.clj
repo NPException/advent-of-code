@@ -311,16 +311,32 @@
 (defn and-fn
   "Returns a function that combines all given predicates via 'and'.
   So it will only return true, if all predicates returned true for a given input."
-  [& preds]
-  (fn [& args]
-    (every? #(apply % args) preds)))
+  ([pred] pred)
+  ([pred1 pred2]
+   (fn
+     ([] (and (pred1) (pred2)))
+     ([a] (and (pred1 a) (pred2 a)))
+     ([a b] (and (pred1 a b) (pred2 a b)))
+     ([a b c] (and (pred1 a b c) (pred2 a b c)))
+     ([a b c & more] (and (apply pred1 a b c more)
+                          (apply pred2 a b c more)))))
+  ([pred1 pred2 & preds]
+   (and-fn pred1 (apply and-fn pred2 preds))))
 
 (defn or-fn
   "Returns a function that combines all given predicates via 'or'.
   So it will return true only if at least one predicate returned true for a given input."
-  [& preds]
-  (fn [& args]
-    (boolean (some #(apply % args) preds))))
+  ([pred] pred)
+  ([pred1 pred2]
+   (fn
+     ([] (or (pred1) (pred2)))
+     ([a] (or (pred1 a) (pred2 a)))
+     ([a b] (or (pred1 a b) (pred2 a b)))
+     ([a b c] (or (pred1 a b c) (pred2 a b c)))
+     ([a b c & more] (or (apply pred1 a b c more)
+                         (apply pred2 a b c more)))))
+  ([pred1 pred2 & preds]
+   (and-fn pred1 (apply and-fn pred2 preds))))
 
 (def not-fn
   "Takes a predicate and inverts it. (just an alias for 'clojure.core/complement')"
@@ -329,10 +345,32 @@
 (defn if-fn
   "Combines 3 predicates to a branching predicate, like an if-then-else"
   [p-test p-then p-else]
-  (fn [& args]
-    (if (apply p-test args)
-      (apply p-then args)
-      (apply p-else args))))
+  (fn
+    ([] (if (p-test) (p-then) (p-else)))
+    ([a] (if (p-test a) (p-then a) (p-else a)))
+    ([a b] (if (p-test a b) (p-then a b) (p-else a b)))
+    ([a b c] (if (p-test a b c) (p-then a b c) (p-else a b c)))
+    ([a b c & more] (if (apply p-test a b c more)
+                      (apply p-then a b c more)
+                      (apply p-else a b c more)))))
+
+;; logical IMPLY (single arrow): rule is true unless `p-test` (p) is true and `p-then` (q) is false. ("We care about q only if p is true.")
+(defn imply-fn
+  "Combines 2 predicates. If the first one returns true, the second one must also return true."
+  [p-test p-then]
+  (or-fn (not-fn p-test) p-then))
+
+;; logical XNOR (double arrow): returns true only if p and q have the same result.
+(defn iff-fn
+  "Combines 2 predicates. The resulting predicate returns true when both predicates return the same result."
+  [p-pred q-pred]
+  (fn
+    ([] (= (p-pred) (q-pred)))
+    ([a] (= (p-pred a) (q-pred a)))
+    ([a b] (= (p-pred a b) (q-pred a b)))
+    ([a b c] (= (p-pred a b c) (q-pred a b c)))
+    ([a b c & more] (= (apply p-pred a b c more)
+                       (apply q-pred a b c more)))))
 
 
 
