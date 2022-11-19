@@ -1,6 +1,6 @@
 (ns aoc-%>year<%.day-%>day<%
   (:require [clojure.string :as str]
-            [clojure.java.math :as math]
+            [clojure.math :as math]
             [criterium.core :as crit]
             [aoc-utils :as u]))
 
