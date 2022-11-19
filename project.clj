@@ -7,6 +7,7 @@
   :dependencies [[org.clojure/clojure "1.11.1"]
                  [org.clojure/core.match "1.0.0"]
                  [http-kit "2.6.0"]
+                 [hickory "0.7.1"]
                  [criterium "0.4.6"]]
   :source-paths      ["src/clojure"]
   :java-source-paths ["src/java"]

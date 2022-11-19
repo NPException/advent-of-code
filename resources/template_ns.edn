@@ -4,7 +4,7 @@
             [clojure.java.math :as math]
             [aoc-utils :as u]))
 
-;; --- Day %>day<%:  --- https://adventofcode.com/%>year<%/day/%>day<%
+;; %>title<%
 
 (def task-input (u/slurp-resource "inputs/aoc_%>year<%/day-%>day<%.txt"))
 

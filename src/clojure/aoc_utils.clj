@@ -4,6 +4,7 @@
             [clojure.edn :as edn]
             [clojure.main :as main]
             [org.httpkit.client :as http]
+            [web-utils :as web]
             [clojure.walk :as walk])
   (:import (clojure.lang IPersistentVector)
            (java.time LocalDateTime)
@@ -449,12 +450,17 @@
      (spit inputs-file (str/trim-newline input))
      (println "Downloaded input to" (.getPath inputs-file)))
    ;; create clojure namespace file
-   (let [ns-file (io/file (str "./src/clojure/aoc_" year "/day_" day ".clj"))]
+   (let [ns-file (io/file (str "./src/clojure/aoc_" year "/day_" day ".clj"))
+         task-title (-> (web/load-hiccup (str "https://adventofcode.com/" year "/day/" day))
+                        (web/search :h2 nil)
+                        (web/body)
+                        first)]
      (-> ns-file .getParentFile .mkdirs)
      (when (.createNewFile ns-file)
        (-> (slurp-resource "template_ns.edn")
            (str/replace #"%>.+?<%" {"%>year<%" (str year)
-                                    "%>day<%" (str day)})
+                                    "%>day<%" (str day)
+                                    "%>title<%" task-title})
            (#(spit ns-file %)))
        (println "Created Clojure namespace in " (.getPath ns-file))))))
 
