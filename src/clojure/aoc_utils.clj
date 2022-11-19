@@ -7,8 +7,8 @@
             [clojure.walk :as walk])
   (:import (clojure.lang IPersistentVector)
            (java.time LocalDateTime)
-           (java.util ArrayDeque HashMap HashSet PriorityQueue Comparator)
-           (java.util.function ToDoubleFunction)))
+           (java.util Arrays HashMap HashSet PriorityQueue Comparator)
+           (java.util.function LongConsumer LongSupplier ToDoubleFunction)))
 
 
 (defn slurp-resource
@@ -237,7 +237,7 @@
   ;; TODO: implement 4-arity variant with pad collection
   ([n ^IPersistentVector v]
    (vpartition n n v))
-  ([n step ^IPersistentVector v]
+  ([^long n ^long step ^IPersistentVector v]
    (lazy-seq
      (let [num (count v)]
        (when (>= num n)
@@ -245,26 +245,44 @@
            (vpartition n step (subvec v step num))))))))
 
 
+(deftype ^:private LongBox
+  [^:unsynchronized-mutable ^long x]
+  LongSupplier
+  (getAsLong [_] x)
+  LongConsumer
+  (accept [_ v] (set! x v)))
+
+
 (defn partitioning
   "A transducer variation of clojure.core/partition."
   ([^long n] (partitioning n n))
   ([^long n ^long step]
-   (fn [rf]
-     (let [a (ArrayDeque. n)]
-       (fn
-         ([] (rf))
-         ([result] (rf result))
-         ([result input]
-          ;; the commented out alternate sections would allow for nil values at the cost of performance
-          ;(.addLast a (if (nil? input) ::nil input))                 ; alt version
-          (.addLast a input)
-          (if (= n (.size a))
-            ;(let [v (mapv #(when-not (identical? % ::nil) %) a)]     ; alt version
-            (let [v (vec (.toArray a))]
-              (dotimes [_ step]
-                (.pollFirst a))
-              (rf result v))
-            result)))))))
+   ;; blank partition only used to efficiently clear partition elements on finish to allow GC
+   (let [blank-partition     (object-array n)
+         last-index          (dec n)
+         step-diff           (- n step)
+         needs-partial-copy? (pos? step-diff)]
+     (fn [rf]
+       (let [partition (object-array n)
+             length  (LongBox. 0)]
+         (fn
+           ([] (rf))
+           ([result]
+            ;; allow GC to collect elements of the last partition, even if transducer is kept around
+            (System/arraycopy blank-partition 0 partition 0 n)
+            (rf result))
+           ([result input]
+            (let [current-length (.getAsLong length)]
+              (when-not (neg? current-length)
+                (aset partition current-length input))
+              (.accept length (inc current-length))
+              (if (= current-length last-index)
+                (let [v (vec (Arrays/copyOf partition n))]
+                  (when needs-partial-copy?
+                    (System/arraycopy partition step partition 0 step-diff))
+                  (.accept length step-diff)
+                  (rf result v))
+                result)))))))))
 
 
 (defn count-matching
