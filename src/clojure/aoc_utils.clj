@@ -5,7 +5,8 @@
             [clojure.main :as main]
             [org.httpkit.client :as http]
             [clojure.walk :as walk])
-  (:import (java.time LocalDateTime)
+  (:import (clojure.lang IPersistentVector)
+           (java.time LocalDateTime)
            (java.util ArrayDeque HashMap HashSet PriorityQueue Comparator)
            (java.util.function ToDoubleFunction)))
 
@@ -225,6 +226,23 @@
                    (partitions (- n x) (dec k))))
             (range 1 (inc (- n (dec k)))))
     [[n]]))
+
+
+(defn vpartition
+  "Returns a lazy sequence of vectors of n items each, at offsets step
+  apart. If step is not supplied, defaults to n, i.e. the partitions
+  do not overlap.
+  Uses subvec to increase partitioning performance. Note that this means
+  the source vector will not be GC'ed while any of the partitions is alive."
+  ;; TODO: implement 4-arity variant with pad collection
+  ([n ^IPersistentVector v]
+   (vpartition n n v))
+  ([n step ^IPersistentVector v]
+   (lazy-seq
+     (let [num (count v)]
+       (when (>= num n)
+         (cons (subvec v 0 n)
+           (vpartition n step (subvec v step num))))))))
 
 
 (defn partitioning
