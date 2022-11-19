@@ -227,29 +227,24 @@
     [[n]]))
 
 
-(defn partition-xf
+(defn partitioning
   "A transducer variation of clojure.core/partition."
-  ([^long n] (partition-xf n n))
+  ([^long n] (partitioning n n))
   ([^long n ^long step]
    (fn [rf]
      (let [a (ArrayDeque. n)]
        (fn
          ([] (rf))
-         ([result]
-          (let [v (when (= (.size a) n)
-                    (vec (.toArray a)))
-                ;; allow early garbage collection
-                _ (.clear a)
-                result (if v
-                         (unreduced (rf result v))
-                         result)]
-            (rf result)))
+         ([result] (rf result))
          ([result input]
-          (.add a input)
+          ;; the commented out alternate sections would allow for nil values at the cost of performance
+          ;(.addLast a (if (nil? input) ::nil input))                 ; alt version
+          (.addLast a input)
           (if (= n (.size a))
+            ;(let [v (mapv #(when-not (identical? % ::nil) %) a)]     ; alt version
             (let [v (vec (.toArray a))]
               (dotimes [_ step]
-                (.removeFirst a))
+                (.pollFirst a))
               (rf result v))
             result)))))))
 

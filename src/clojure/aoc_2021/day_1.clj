@@ -14,7 +14,7 @@
   [input transform]
   (transduce
     (comp transform
-          (u/partition-xf 2 1)
+          (u/partitioning 2 1)
           (map (fn [[a b]]
                  (if (< a b) 1 0))))
     +
@@ -27,7 +27,7 @@
 
 (defn part-2
   [input]
-  (count-increasing-steps input (comp (u/partition-xf 3 1)
+  (count-increasing-steps input (comp (u/partitioning 3 1)
                                       (map #(apply + %)))))
 
 
