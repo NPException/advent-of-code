@@ -7,6 +7,7 @@
             [web-utils :as web]
             [clojure.walk :as walk])
   (:import (clojure.lang IPersistentVector)
+           (de.npe.utils LongBox)
            (java.time LocalDateTime)
            (java.util Arrays HashMap HashSet PriorityQueue Comparator)
            (java.util.function LongConsumer LongSupplier ToDoubleFunction)))
@@ -246,14 +247,6 @@
            (vpartition n step (subvec v step num))))))))
 
 
-(deftype ^:private LongBox
-  [^:unsynchronized-mutable ^long x]
-  LongSupplier
-  (getAsLong [_] x)
-  LongConsumer
-  (accept [_ v] (set! x v)))
-
-
 (defn partitioning
   "A transducer variation of clojure.core/partition."
   ([^long n] (partitioning n n))
@@ -273,15 +266,15 @@
             (System/arraycopy blank-partition 0 partition 0 n)
             (rf result))
            ([result input]
-            (let [current-length (.getAsLong length)]
+            (let [current-length (.get length)]
               (when-not (neg? current-length)
                 (aset partition current-length input))
-              (.accept length (inc current-length))
+              (.set length (inc current-length))
               (if (= current-length last-index)
                 (let [v (vec (Arrays/copyOf partition n))]
                   (when needs-partial-copy?
                     (System/arraycopy partition step partition 0 step-diff))
-                  (.accept length step-diff)
+                  (.set length step-diff)
                   (rf result v))
                 result)))))))))
 
