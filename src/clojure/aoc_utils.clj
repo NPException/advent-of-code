@@ -295,6 +295,30 @@
     coll))
 
 
+(defn distinctv
+  "Like distinct, but eager. Uses a Java HashSet under the hood."
+  ([]
+   (fn [rf]
+     (let [seen (HashSet.)]
+       (fn
+         ([] (rf))
+         ([result] (rf result))
+         ([result input]
+          (if (.add seen input)
+            (rf result input)
+            result))))))
+  ([coll]
+   (let [seen (HashSet.)]
+     (persistent!
+       (reduce
+         (fn [acc v]
+           (if (.add seen v)
+             (conj! acc v)
+             acc))
+         (transient [])
+         coll)))))
+
+
 (defn A*-search
   "A* implementation translated from https://en.wikipedia.org/wiki/A*_search_algorithm#Pseudocode
   nil elements are not permitted. (might implement later)"
