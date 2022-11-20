@@ -1,5 +1,6 @@
 (ns aoc-utils
   (:require [clojure.java.io :as io]
+            [clojure.math :as math]
             [clojure.string :as str]
             [clojure.edn :as edn]
             [clojure.main :as main]
@@ -228,6 +229,20 @@
                    (partitions (- n x) (dec k))))
             (range 1 (inc (- n (dec k)))))
     [[n]]))
+
+
+(defn find-all-divisors
+  "Returns a vector of all possible divisors of n in ascending order."
+  [^long n]
+  (let [low-divs         (->> (range 1 (inc (long (math/sqrt n))))
+                              (filterv #(zero? (rem n ^long %))))
+        skip-first-high? (let [^long i (peek low-divs)]
+                           (= i (quot n i)))]
+    (into low-divs
+      (comp
+        (if skip-first-high? (drop 1) identity)
+        (map #(quot n ^long %)))
+      (rseq low-divs))))
 
 
 (defn vpartition
