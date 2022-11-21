@@ -1,17 +1,17 @@
 (ns aoc-utils
-  (:require [clojure.java.io :as io]
+  (:require [clojure.edn :as edn]
+            [clojure.java.io :as io]
+            [clojure.main :as main]
             [clojure.math :as math]
             [clojure.string :as str]
-            [clojure.edn :as edn]
-            [clojure.main :as main]
+            [clojure.walk :as walk]
             [org.httpkit.client :as http]
-            [web-utils :as web]
-            [clojure.walk :as walk])
+            [web-utils :as web])
   (:import (clojure.lang IPersistentVector)
            (de.npe.utils LongBox)
            (java.time LocalDateTime)
-           (java.util Arrays HashMap HashSet PriorityQueue Comparator)
-           (java.util.function LongConsumer LongSupplier ToDoubleFunction)))
+           (java.util Arrays Comparator HashMap HashSet PriorityQueue)
+           (java.util.function ToDoubleFunction)))
 
 
 (defn slurp-resource
@@ -90,8 +90,8 @@
   (if (bytes? bytes)
     ;; fast path
     (let [^bytes bytes bytes
-          byte-num (alength bytes)
-          sb (StringBuilder. ^long (* 2 byte-num))]
+          byte-num     (alength bytes)
+          sb           (StringBuilder. ^long (* 2 byte-num))]
       (loop [i 0]
         (when (< i byte-num)
           (.append sb (byte->hex (aget bytes i)))
@@ -143,7 +143,7 @@
   "Returns the index of the first element in coll which matches pred"
   [pred coll]
   (loop [coll coll
-         i 0]
+         i    0]
     (when-let [[e & more] (seq coll)]
       (if (pred e) i (recur more (inc i))))))
 
@@ -164,15 +164,13 @@
 
 (defn group-by-and-map
   "Returns a map of the elements of coll keyed by the result of
-  gf on each element. The value at each key will be a vector of the
+  kf on each element. The value at each key will be a vector of the
   corresponding elements mapped by mf, in the order they appeared in coll."
-  {:added "1.2"
-   :static true}
-  [gf mf coll]
+  [kf mf coll]
   (persistent!
     (reduce
       (fn [ret x]
-        (let [k (gf x)]
+        (let [k (kf x)]
           (assoc! ret k (conj (get ret k []) (mf x)))))
       (transient {}) coll)))
 
@@ -181,7 +179,7 @@
   "Returns a lazy sequence of all possible
   rearrangements for a collection of unique elements."
   [col]
-  (let [vcol (vec col)
+  (let [vcol    (vec col)
         indices ((fn iperms [indices]
                    (lazy-seq
                      (if (next indices)
@@ -198,15 +196,15 @@
 (defn combinations
   "Generate a list of all possible n-sized tuple combinations in coll."
   [n coll]
-  (let [coll (vec coll)
-        size (count coll)
+  (let [coll     (vec coll)
+        size     (count coll)
         comb-aux (fn comb-aux
                    [^long m ^long start]
                    (if (= 1 m)
                      (for [x (range start size)]
                        (list (nth coll x)))
                      (for [^long x (range start size)
-                           xs (comb-aux (dec m) (inc x))]
+                           xs      (comb-aux (dec m) (inc x))]
                        (cons (nth coll x) xs))))]
     (comb-aux n 0)))
 
@@ -215,8 +213,8 @@
   "Returns the sum of integers in the given range."
   [^long from ^long to]
   (/ (* (inc (- to from))
-        (+ from to))
-     2))
+       (+ from to))
+    2))
 
 
 (defn partitions
@@ -226,8 +224,8 @@
   (if (> k 1)
     (mapcat (fn [^long x]
               (map (partial cons x)
-                   (partitions (- n x) (dec k))))
-            (range 1 (inc (- n (dec k)))))
+                (partitions (- n x) (dec k))))
+      (range 1 (inc (- n (dec k)))))
     [[n]]))
 
 
@@ -250,7 +248,7 @@
   apart. If step is not supplied, defaults to n, i.e. the partitions
   do not overlap.
   Uses subvec to increase partitioning performance. Note that this means
-  the source vector will not be GC'ed while any of the partitions is alive."
+  the source vector will not be GC'ed while any of the partitions are alive."
   ;; TODO: implement 4-arity variant with pad collection
   ([n ^IPersistentVector v]
    (vpartition n n v))
@@ -273,7 +271,7 @@
          needs-partial-copy? (pos? step-diff)]
      (fn [rf]
        (let [partition (object-array n)
-             length  (LongBox. 0)]
+             length    (LongBox. 0)]
          (fn
            ([] (rf))
            ([result]
@@ -331,10 +329,10 @@
   "A* implementation translated from https://en.wikipedia.org/wiki/A*_search_algorithm#Pseudocode
   nil elements are not permitted. (might implement later)"
   [start goal? neighbours-fn heuristic-fn cost-fn]
-  (let [came-from (HashMap.)                                ;; For node n, (came-from n) is the node immediately preceding it on the cheapest path from start to n currently known.
-        g-score (HashMap.)                                  ;; <double> For node n, (g-score n) is the cost of the cheapest path from start to n currently known. (default: infinity)
-        f-score (HashMap.)                                  ;; <double> For node n, (f-score n) is (g-score n) + (h n). (f-score n) represents our current best guess as to how short a path from start to finish can be if it goes through n.
-        open-set (HashSet.)                                 ;; The set of discovered nodes that may need to be (re-)expanded. Initially, only the start node is known.
+  (let [came-from  (HashMap.)                               ;; For node n, (came-from n) is the node immediately preceding it on the cheapest path from start to n currently known.
+        g-score    (HashMap.)                               ;; <double> For node n, (g-score n) is the cost of the cheapest path from start to n currently known. (default: infinity)
+        f-score    (HashMap.)                               ;; <double> For node n, (f-score n) is (g-score n) + (heuristic-fn n). (f-score n) represents our current best guess as to how short a path from start to finish can be if it goes through n.
+        open-set   (HashSet.)                               ;; The set of discovered nodes that may need to be (re-)expanded. Initially, only the start node is known.
         open-queue (PriorityQueue.
                      (Comparator/comparingDouble
                        (reify ToDoubleFunction
@@ -348,7 +346,7 @@
         (.remove open-set current)
         (if (goal? current)
           ;; construct result
-          (loop [n current
+          (loop [n    current
                  path (list current)]
             (if-some [n (.get came-from n)]
               (recur n (conj path n))
@@ -458,11 +456,11 @@
           a keyword, symbol, or string, use :k, k, or \"k\" respectively.
   {x [a b]} - Similar to {x k}, but resolves via 'get-in'."
   [^String s]
-  (let [placeholders (re-seq #"\{([^{} ,]+)(?: ([^{} ,]+|\[(?:[^{} ,]+[, ]*)+\]))?\}" s)
+  (let [placeholders  (re-seq #"\{([^{} ,]+)(?: ([^{} ,]+|\[(?:[^{} ,]+[, ]*)+\]))?\}" s)
         format-string (reduce #(str/replace-first %1 (first %2) "%s") s placeholders)
-        values (->> placeholders
-                    (map parse-debug-value)
-                    (map #(list 'clojure.core/pr-str %)))]
+        values        (->> placeholders
+                           (map parse-debug-value)
+                           (map #(list 'clojure.core/pr-str %)))]
     `(println (format ~format-string ~@values))))
 
 
@@ -476,13 +474,13 @@
   ([year day]
    ;; create input text file
    (let [inputs-file (io/file (str "./resources/inputs/aoc_" year "/day-" day ".txt"))
-         input (:body @(http/get (str "https://adventofcode.com/" year "/day/" day "/input")
-                                 {:headers {"cookie" (str "session=" (System/getenv "AOC_SESSION"))}}))]
+         input       (:body @(http/get (str "https://adventofcode.com/" year "/day/" day "/input")
+                               {:headers {"cookie" (str "session=" (System/getenv "AOC_SESSION"))}}))]
      (-> inputs-file .getParentFile .mkdirs)
      (spit inputs-file (str/trim-newline input))
      (println "Downloaded input to" (.getPath inputs-file)))
    ;; create clojure namespace file
-   (let [ns-file (io/file (str "./src/clojure/aoc_" year "/day_" day ".clj"))
+   (let [ns-file    (io/file (str "./src/clojure/aoc_" year "/day_" day ".clj"))
          task-title (-> (web/load-hiccup (str "https://adventofcode.com/" year "/day/" day))
                         (web/search :h2 nil)
                         (web/body)
@@ -490,8 +488,8 @@
      (-> ns-file .getParentFile .mkdirs)
      (when (.createNewFile ns-file)
        (-> (slurp-resource "template_ns.edn")
-           (str/replace #"%>.+?<%" {"%>year<%" (str year)
-                                    "%>day<%" (str day)
+           (str/replace #"%>.+?<%" {"%>year<%"  (str year)
+                                    "%>day<%"   (str day)
                                     "%>title<%" task-title})
            (#(spit ns-file %)))
        (println "Created Clojure namespace in " (.getPath ns-file))))))
