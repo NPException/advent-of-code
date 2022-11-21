@@ -1,8 +1,8 @@
 (ns aoc-%>year<%.day-%>day<%
-  (:require [clojure.string :as str]
+  (:require [aoc-utils :as u]
             [clojure.math :as math]
-            [criterium.core :as crit]
-            [aoc-utils :as u]))
+            [clojure.string :as str]
+            [criterium.core :as crit]))
 
 ;; %>title<%
 
