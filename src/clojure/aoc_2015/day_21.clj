@@ -8,19 +8,13 @@
 
 (def task-input (u/slurp-resource "inputs/aoc_2015/day-21.txt"))
 
-(def test-input "Hit Points: 12\nDamage: 7\nArmor: 2")
 
-
-(defn parse-input
+(defn parse-boss
   [input]
   (->> (str/split-lines input)
        (map #(str/split % #": "))
-       (map (fn [[k v]]
-              [(-> (str/replace k " " "")
-                   (str/lower-case)
-                   keyword)
-               (parse-long v)]))
-       (into {})))
+       (map second)
+       (mapv parse-long)))
 
 
 (def shop
@@ -56,31 +50,61 @@
   [[^long player-hp player-damage player-armor]
    [^long boss-hp boss-damage boss-armor]]
   (let [player-attack (calc-damage player-damage boss-armor)
-        boss-attack (calc-damage boss-damage player-armor)
-        player-turns (long (math/ceil (/ (double boss-hp) player-attack)))
-        boss-turns (long (math/ceil (/ (double player-hp) boss-attack)))]
+        boss-attack   (calc-damage boss-damage player-armor)
+        player-turns  (long (math/ceil (/ (double boss-hp) player-attack)))
+        boss-turns    (long (math/ceil (/ (double player-hp) boss-attack)))]
     (<= player-turns boss-turns)))
+
+
+(defn gear-options
+  []
+  ; weapon is mandatory
+  ; armor is optional
+  ; rings are optional; 0-2 rings.
+  (let [weapons (->> shop :weapons vals)
+        armor   (->> shop :armor vals
+                     (cons [0 0 0]))
+        rings   (->> shop :rings vals
+                     (cons [0 0 0])
+                     (u/combinations 2)
+                     (map (fn [[r1 r2]]
+                            (mapv + r1 r2)))
+                     (cons [0 0 0]))]
+    (for [w weapons
+          a armor
+          r rings]
+      (mapv + w a r))))
 
 
 (defn part-1
   [input]
-  )
+  (let [boss (parse-boss input)]
+    (->> (gear-options)
+         (sort-by first)
+         (u/first-match
+           (fn [[_cost damage armor]]
+             (play [100 damage armor] boss)))
+         first)))
 
 
 (defn part-2
   [input]
-  )
+  (let [boss (parse-boss input)]
+    (->> (gear-options)
+         (sort-by first #(compare %2 %1))
+         (drop-while
+           (fn [[_cost damage armor]]
+             (play [100 damage armor] boss)))
+         ffirst)))
 
 
 (comment
   ;; Part 1
-  (part-1 test-input)                                       ; =>
-  (part-1 task-input)                                       ; =>
+  (part-1 task-input)                                       ; => 111
   (crit/quick-bench (part-1 task-input))
 
   ;; Part 2
-  (part-2 test-input)                                       ; =>
-  (part-2 task-input)                                       ; =>
+  (part-2 task-input)                                       ; => 188
   (crit/quick-bench (part-2 task-input))
 
   )
