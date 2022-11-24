@@ -475,6 +475,21 @@
 
 
 
+(def ^:dynamic *aoc-session-id* nil)
+
+(defn load-session-id []
+  (if-some [session-id (or *aoc-session-id*
+                           (System/getenv "AOC_SESSION")
+                           (try
+                             (str/trim (slurp "session-id.txt"))
+                             (catch Exception _)))]
+    session-id
+    (throw (IllegalStateException. "No AOC session id present. You have 3 options to specify one:
+             Bind it to `aoc-utils/*aoc-session-id*` via `binding`,
+             set it as an environment variable `AOC_SESSION`,
+             or store it in a file named `session-id.txt` in the working directory."))))
+
+
 (defn start-day
   "Initializes a new namespace for the given day and downloads the input for the day.
   This requires a valid session id in the environment variable 'AOC_SESSION'."
@@ -485,7 +500,7 @@
    ;; create input text file
    (let [inputs-file (io/file (str "./resources/inputs/aoc_" year "/day-" day ".txt"))
          input       (:body @(http/get (str "https://adventofcode.com/" year "/day/" day "/input")
-                               {:headers {"cookie" (str "session=" (System/getenv "AOC_SESSION"))}}))]
+                               {:headers {"cookie" (str "session=" (load-session-id))}}))]
      (-> inputs-file .getParentFile .mkdirs)
      (spit inputs-file (str/trim-newline input))
      (println "Downloaded input to" (.getPath inputs-file)))
