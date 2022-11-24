@@ -63,16 +63,9 @@
     (catch Exception _)))
 
 
-(defn pow
-  ^long [^long a ^long b]
-  (loop [r 1
-         n b]
-    (if (= n 0)
-      r
-      (recur (* r a) (dec n)))))
-
-
 (def ^:private hex-lookup
+  "A vector of all 256 hex values for a byte:
+  [\"00\" \"01\" \"02\" ... \"fd\" \"fe\" \"ff\"]"
   (let [hex-chars [\0 \1 \2 \3 \4 \5 \6 \7 \8 \9 \a \b \c \d \e \f]]
     (->> hex-chars
          (mapcat #(interleave (repeat %) hex-chars))
@@ -115,21 +108,24 @@
        (apply concat)))
 
 
+(def ^:private keywordizing
+  "Transducer to keywordize the keys in map entries"
+  (map (fn [[k v :as entry]]
+         (if (or (string? k) (symbol? k))
+           [(keyword k) v]
+           entry))))
+
 (defn keywordize-keys
   "Recursively transforms all map keys from strings/symbols to keywords.
   (copied and modified from `clojure.walk/keywordize-keys`)"
   [m]
-  (let [f (fn [[k v]]
-            (if (or (string? k) (symbol? k))
-              [(keyword k) v]
-              [k v]))]
-    ;; only apply to maps
-    (walk/postwalk
-      (fn [x]
-        (if (map? x)
-          (into {} (map f x))
-          x))
-      m)))
+  ;; only apply to maps
+  (walk/postwalk
+    (fn [x]
+      (if (map? x)
+        (into {} keywordizing x)
+        x))
+    m))
 
 
 (defn first-match
@@ -302,7 +298,8 @@
 
 
 (defn distinctv
-  "Like distinct, but eager. Uses a Java HashSet under the hood."
+  "Like `distinct`, but eager. The transducer variant is a bit more efficient
+  than `distinct` because it uses a Java HashSet under the hood."
   ([]
    (fn [rf]
      (let [seen (HashSet.)]
@@ -327,7 +324,14 @@
 
 (defn A*-search
   "A* implementation translated from https://en.wikipedia.org/wiki/A*_search_algorithm#Pseudocode
-  nil elements are not permitted. (might implement later)"
+  nil elements are not permitted. (might implement later)
+  Paramters:
+  `start` - The state from which the search should begin.
+  `goal?` - Predicate function which takes a node and must return true if the given value represents the desired final state.
+  `neighbours-fn` - Given a state, has to return a sequence of states that the search can continue traversing.
+  `heuristic-fn` - Given a state, should return a cost estimate of going from the state to the goal.
+                   (Bad estimates can make the search really slow. When unsure, try `(constantly 0)` as fallback.
+  `cost-fn` - Given the current state and a neighbor state, must return the cost of moving to the neighbor state."
   [start goal? neighbours-fn heuristic-fn cost-fn]
   (let [came-from  (HashMap.)                               ;; For node n, (came-from n) is the node immediately preceding it on the cheapest path from start to n currently known.
         g-score    (HashMap.)                               ;; <double> For node n, (g-score n) is the cost of the cheapest path from start to n currently known. (default: infinity)
@@ -400,9 +404,15 @@
   ([pred1 pred2 & preds]
    (and-fn pred1 (apply and-fn pred2 preds))))
 
-(def not-fn
-  "Takes a predicate and inverts it. (just an alias for 'clojure.core/complement')"
-  complement)
+(defn not-fn
+  "Takes a predicate and inverts it. (equivalent to 'clojure.core/complement', with additional 3-arity body)"
+  [pred]
+  (fn
+    ([] (not (pred)))
+    ([x] (not (pred x)))
+    ([x y] (not (pred x y)))
+    ([x y z] (not (pred x y z)))
+    ([x y z & more] (not (apply pred x y z more)))))
 
 (defn if-fn
   "Combines 3 predicates to a branching predicate, like an if-then-else"
@@ -419,8 +429,8 @@
 ;; logical IMPLY (single arrow): rule is true unless `p-test` (p) is true and `p-then` (q) is false. ("We care about q only if p is true.")
 (defn imply-fn
   "Combines 2 predicates. If the first one returns true, the second one must also return true."
-  [p-test p-then]
-  (or-fn (not-fn p-test) p-then))
+  [p-pred q-pred]
+  (or-fn (not-fn p-pred) q-pred))
 
 ;; logical XNOR (double arrow): returns true only if p and q have the same result.
 (defn iff-fn

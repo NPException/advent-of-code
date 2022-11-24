@@ -1,6 +1,7 @@
 (ns aoc-2015.day-17
   (:use [criterium.core])
-  (:require [aoc-utils :as u]))
+  (:require [aoc-utils :as u]
+            [clojure.math :as math]))
 
 ;; --- Day 17: No Such Thing as Too Much --- https://adventofcode.com/2015/day/17
 
@@ -23,7 +24,7 @@
 (defn find-containers
   [input target]
   (let [size (count input)]
-    (->> (range (u/pow 2 size))
+    (->> (range (long (math/pow 2 size)))
          (filter #(= target (sum input size %))))))
 
 

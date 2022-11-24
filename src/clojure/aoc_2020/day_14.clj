@@ -1,6 +1,8 @@
 (ns aoc-2020.day-14
-  (:require [clojure.string :as string]
-            [aoc-utils :as u]))
+  (:require
+    [aoc-utils :as u]
+    [clojure.math :as math]
+    [clojure.string :as string]))
 
 ;; --- Day 14: Docking Data --- https://adventofcode.com/2020/day/14
 
@@ -75,7 +77,7 @@
 
 (defn compute-float-masks
   [floaty-bits]
-  (for [n (range (u/pow 2 (count floaty-bits)))]
+  (for [n (range (long (math/pow 2 (count floaty-bits))))]
     (persistent!
       (reduce-kv
         (fn [mask-ops float-index bit-index]
