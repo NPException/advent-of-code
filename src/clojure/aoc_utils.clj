@@ -99,6 +99,37 @@
           (.toString sb))))))
 
 
+(defn rpartial
+  "Takes a function f and fewer than the normal arguments to f, and
+  returns a fn that takes a variable number of additional args. When
+  called, the returned function calls f with additional args + args.
+  So compared to `partial`, it passes the partialed args last."
+  ([f] f)
+  ([f arg1]
+   (fn
+     ([] (f arg1))
+     ([x] (f x arg1))
+     ([x y] (f x y arg1))
+     ([x y z] (f x y z arg1))
+     ([x y z & args] (apply f x y z (concat args [arg1])))))
+  ([f arg1 arg2]
+   (fn
+     ([] (f arg1 arg2))
+     ([x] (f x arg1 arg2))
+     ([x y] (f x y arg1 arg2))
+     ([x y z] (f x y z arg1 arg2))
+     ([x y z & args] (apply f x y z (concat args [arg1 arg2])))))
+  ([f arg1 arg2 arg3]
+   (fn
+     ([] (f arg1 arg2 arg3))
+     ([x] (f x arg1 arg2 arg3))
+     ([x y] (f x y arg1 arg2 arg3))
+     ([x y z] (f x y z arg1 arg2 arg3))
+     ([x y z & args] (apply f x y z (concat args [arg1 arg2 arg3])))))
+  ([f arg1 arg2 arg3 & more]
+   (fn [& args] (apply f (concat args [arg1 arg2 arg3] more)))))
+
+
 (defn cpmap
   "A chunked variant of pmap. Instead of using one thread for application of f,
   uses one thread for n applications of f."
