@@ -8,16 +8,13 @@
 (def task-input (u/slurp-resource "inputs/aoc_2021/day-23.txt"))
 (def test-input "#############\n#...........#\n###B#C#B#D###\n  #A#D#C#A#\n  #########")
 
-(defmacro nth-in [v is]
-  `(-> ~v ~@(map (fn [i] (list `nth i)) is)))
-
 (defn print-state
   [state]
   (let [rooms (range (- (count state) 8))
         n (count rooms)
         depth (/ n 4)
         columns (partition depth rooms)
-        e #(-> (nth-in state [% 0]) (or \.))]
+        e #(-> (u/nth-in state [% 0]) (or \.))]
     (println "#############")
     (println (str \# (e n) (e (+ n 1)) \. (e (+ n 2)) \. (e (+ n 3)) \. (e (+ n 4)) \. (e (+ n 5)) (e (+ n 6)) \#))
     (println (str "###"
@@ -111,16 +108,16 @@
   [spots path]
   (->> (partition 2 1 path)
        (map (fn [[from to]]
-              ((nth-in spots [from 1]) to)))
+              ((u/nth-in spots [from 1]) to)))
        (apply +)))
 
 (defn find-path
   [spots [from to]]
   (let [path  (vec (u/A*-search from
                      #(= % to)
-                     #(keys (nth-in spots [% 1]))
+                     #(keys (u/nth-in spots [% 1]))
                      (constantly 0)
-                     #((nth-in spots [%1 1]) %2)))
+                     #((u/nth-in spots [%1 1]) %2)))
         steps (path-step-count spots path)]
     [[[from to] [path steps]]
      [[to from] [(vec (rseq path)) steps]]]))
@@ -136,7 +133,7 @@
   [state [steps :as path]]
   "Returns the given path if it is free of obstacles, otherwise returns nil."
   (when (every?
-          #(nil? (nth-in state [% 0]))
+          #(nil? (u/nth-in state [% 0]))
           (subvec steps 1))                                 ;; ignore the start of the path, since that's the current amphipod position
     path))
 
@@ -210,7 +207,7 @@
 (defn finished?
   [spots rooms state]
   (every?
-    #(= (nth-in state [% 0]) (nth-in spots [% 0]))
+    #(= (u/nth-in state [% 0]) (u/nth-in spots [% 0]))
     rooms))
 
 (defn sum-energy

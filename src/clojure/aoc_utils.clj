@@ -130,6 +130,12 @@
    (fn [& args] (apply f (concat args [arg1 arg2 arg3] more)))))
 
 
+(defmacro nth-in
+  "Macro to do highly efficient lookup in nested vectors."
+  [v is]
+  `(-> ~v ~@(map (fn [i] (list `nth i)) is)))
+
+
 (defn cpmap
   "A chunked variant of pmap. Instead of using one thread for application of f,
   uses one thread for n applications of f."
