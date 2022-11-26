@@ -292,6 +292,21 @@
            (vpartition n step (subvec v step num))))))))
 
 
+(defn vpartition-all
+  "Returns a lazy sequence of vectors like partition, but may include partitions with fewer than n items at the end.
+  Uses subvec to increase partitioning performance. Note that this means
+  the source vector will not be GC'ed while any of the partitions are alive."
+  ([n ^IPersistentVector v]
+   (vpartition-all n n v))
+  ([^long n ^long step ^IPersistentVector v]
+   (lazy-seq
+     (let [num (count v)]
+       (if (<= num n)
+         [v]
+         (cons (subvec v 0 n)
+           (vpartition-all n step (subvec v step num))))))))
+
+
 (defn partitioning
   "A transducer variation of clojure.core/partition."
   ([^long n] (partitioning n n))
