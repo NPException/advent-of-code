@@ -1,9 +1,6 @@
 (ns aoc-2015.day-22
-  (:require [aoc-utils :as u]
-            [aoc-2015.day-21 :as previous-day]
-            [clojure.math :as math]
-            [clojure.string :as str]
-            [criterium.core :as crit]))
+  (:require [aoc-2015.day-21 :as previous-day]
+            [aoc-utils :as u]))
 
 ;; --- Day 22: Wizard Simulator 20XX ---
 
@@ -55,15 +52,22 @@
         (assoc! effects-index [(dec shield) (dec poison) (dec recharge)]))))
 
 
-(defn boss-attack!
+(defn damage-player!
   "Returns nil if the player dies from the attack"
   [[_used-mana
     [player-hp mana]
+    :as state§]
+   amount]
+  (when (< amount player-hp)
+    (assoc! state§ player-index [(- player-hp amount) mana])))
+
+
+(defn boss-attack!
+  [[_used-mana
+    _player
     [_boss-hp damage]
-    _effects
     :as state§]]
-  (when (< damage player-hp)
-    (assoc! state§ player-index [(- player-hp damage) mana])))
+  (damage-player! state§ damage))
 
 
 (defn use-mana!
@@ -134,10 +138,40 @@
             (assoc! effects-index [shield poison 5]))))
 
 
-(defn full-turn
-  [state player-action!]
+
+(defn run
+  ; The `cycle-fn` takes a transient current state as well as the action the player wants to do,
+  ; and simulates the player turn and the following boss turn. If the player loses during the
+  ; simulation, `cycle-fn` returns nil.
+  [cycle-fn]
+  (let [start-state [0
+                     [50 500]
+                     [boss-hp boss-base-damage]
+                     [0 0 0]]]
+    (-> (u/A*-search
+          start-state
+          win?
+          (fn [state]
+            (filterv some?
+              [(cycle-fn (transient state) cast-magic-missile!)
+               (cycle-fn (transient state) cast-drain!)
+               (cycle-fn (transient state) cast-shield!)
+               (cycle-fn (transient state) cast-poison!)
+               (cycle-fn (transient state) cast-recharge!)]))
+          (fn [_] 0)
+          (fn [[mana] [next-mana]]
+            (- next-mana mana)))
+        ;; grab last path element
+        (last)
+        ;; used up mana
+        (first))))
+
+; Part 1
+
+(defn part-1-cycle!
+  [state§ player-action!]
   ;; start of player turn
-  (let [state§ (apply-effects! (transient state))]
+  (let [state§ (apply-effects! state§)]
     (if (win? state§)
       (persistent! state§)
       ;; player action (using too much mana might lose the game)
@@ -152,53 +186,19 @@
               (some-> (boss-attack! state§)
                       (persistent!)))))))))
 
+; Part 2
 
-;; state:
-;;   [used-mana player boss active-effects]
-;; player:
-;;   [hp mana]
-;; boss:
-;;   [hp damage]
-;; active-effects: (always 3 elements. each element is the number of turns that the effect remains active)
-;;   [shield poison recharge]
-
-(defn part-1
-  []
-  (let [start-state [0
-                     [50 500]
-                     [boss-hp boss-base-damage]
-                     [0 0 0]]]
-    (-> (u/A*-search
-          start-state
-          win?
-          (fn [state]
-            (filterv some?
-              [(full-turn state cast-magic-missile!)
-               (full-turn state cast-drain!)
-               (full-turn state cast-shield!)
-               (full-turn state cast-poison!)
-               (full-turn state cast-recharge!)]))
-          (fn [_] 0)
-          (fn [[mana] [next-mana]]
-            (- next-mana mana)))
-        ;; grab last path element
-        (last)
-        ;; used up mana
-        (first))))
-
-
-(defn part-2
-  [input]
-  )
+(defn part-2-cycle!
+  [state§ player-action!]
+  (some-> (damage-player! state§ 1)
+          (part-1-cycle! player-action!)))
 
 
 (comment
   ;; Part 1
-  (part-1)                                                  ; => 900
-  (crit/quick-bench (part-1))
+  (run part-1-cycle!)                                       ; => 900
 
   ;; Part 2
-  (part-2 task-input)                                       ; =>
-  (crit/quick-bench (part-2 task-input))
+  (run part-2-cycle!)                                       ; => 1216
 
   )
