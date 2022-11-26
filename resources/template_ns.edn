@@ -4,6 +4,9 @@
             [clojure.string :as str]
             [criterium.core :as crit]))
 
+; (set! *warn-on-reflection* true)
+; (set! *unchecked-math* :warn-on-boxed)
+
 ;; %>title<%
 
 (def task-input (u/slurp-resource "inputs/aoc_%>year<%/day-%>day<%.txt"))
