@@ -5,7 +5,6 @@
             [clojure.math :as math]
             [clojure.string :as str]
             [clojure.walk :as walk]
-            [org.httpkit.client :as http]
             [web-utils :as web])
   (:import (clojure.lang IPersistentVector)
            (de.npe.utils LongBox)
@@ -246,8 +245,8 @@
   "Returns the sum of integers in the given range."
   [^long from ^long to]
   (/ (* (inc (- to from))
-       (+ from to))
-    2))
+        (+ from to))
+     2))
 
 
 (defn partitions
@@ -534,19 +533,20 @@
    (let [now (LocalDateTime/now)]
      (start-day (-> now .getYear) (-> now .getDayOfMonth))))
   ([year day]
-   ;; create input text file
-   (let [inputs-file (io/file (str "./resources/inputs/aoc_" year "/day-" day ".txt"))
-         input       (:body @(http/get (str "https://adventofcode.com/" year "/day/" day "/input")
-                               {:headers {"cookie" (str "session=" (load-session-id))}}))]
+   (let [headers     {:headers {"cookie" (str "session=" (load-session-id))}}
+         inputs-file (io/file (str "./resources/inputs/aoc_" year "/day-" day ".txt"))
+         ns-file     (io/file (str "./src/clojure/aoc_" year "/day_" day ".clj"))
+         input       (web/load-url (str "https://adventofcode.com/" year "/day/" day "/input") headers)
+         task-page   (web/load-hiccup (str "https://adventofcode.com/" year "/day/" day) headers)
+         task-title  (-> (web/search task-page :h2 nil)
+                         (web/body)
+                         first)]
+     ;; create input text file
      (-> inputs-file .getParentFile .mkdirs)
-     (spit inputs-file (str/trim-newline input))
-     (println "Downloaded input to" (.getPath inputs-file)))
-   ;; create clojure namespace file
-   (let [ns-file    (io/file (str "./src/clojure/aoc_" year "/day_" day ".clj"))
-         task-title (-> (web/load-hiccup (str "https://adventofcode.com/" year "/day/" day))
-                        (web/search :h2 nil)
-                        (web/body)
-                        first)]
+     (when (.createNewFile inputs-file)
+       (spit inputs-file (str/trim-newline input))
+       (println "Downloaded input to" (.getPath inputs-file)))
+     ;; create clojure namespace file
      (-> ns-file .getParentFile .mkdirs)
      (when (.createNewFile ns-file)
        (-> (slurp-resource "template_ns.edn")
@@ -554,7 +554,12 @@
                                     "%>day<%"   (str day)
                                     "%>title<%" task-title})
            (#(spit ns-file %)))
-       (println "Created Clojure namespace in " (.getPath ns-file))))))
+       (println "Created Clojure namespace in " (.getPath ns-file)))
+     ;; print easter egg(s)
+     (when-some [eggs (seq (web/search-all task-page :span {:title some?}))]
+       (println "Easter egg mouse-overs:")
+       (doseq [egg-element eggs]
+         (println " " (first (web/body egg-element))))))))
 
 (comment
   (start-day)
