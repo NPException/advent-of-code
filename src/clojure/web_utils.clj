@@ -37,18 +37,41 @@
             false)))))
 
 
-(defn search-all
+(defn ^:private search-all*
   "Searches a hiccup element hierarchy for elements with the given tag and matching attributes"
-  [element target-tag target-attribs & [case-sensitive?]]
+  [element target-tag? literal-attribs predicates-match? & [case-sensitive?]]
   (when (vector? element)
-    (let [match? (and (or (nil? target-tag) (= (tag element) target-tag))
-                      (submap? target-attribs (attribs element) case-sensitive?))]
+    (let [match? (and (or (nil? target-tag?) (target-tag? (tag element)))
+                      (submap? literal-attribs (attribs element) case-sensitive?)
+                      (or (nil? predicates-match?)
+                          (predicates-match? (attribs element))))]
       (loop [children (body element)
              results  (if match? [element] [])]
         (if (empty? children)
           results
           (recur (rest children)
-            (into results (search-all (first children) target-tag target-attribs case-sensitive?))))))))
+            (into results (search-all* (first children) target-tag? literal-attribs predicates-match? case-sensitive?))))))))
+
+
+(defn search-all
+  "Searches a hiccup element hierarchy for elements with the given tag and matching attributes.
+  `target-tag` can either be a keyword for literal tag matches, or a function which will receive tag keywords.
+  `target-attribs` may contain literal strings as values for literal matches, and functions for finer grained searches."
+  [element target-tag target-attribs & [case-sensitive?]]
+  (let [target-tag?       (when target-tag
+                            (if (keyword? target-tag)
+                              (fn [tag] (= tag target-tag))
+                              target-tag))
+        literal?          (comp string? val)
+        literal-attribs   (into {} (filter literal?) target-attribs)
+        predicate-attribs (into {} (filter (complement literal?)) target-attribs)
+        predicates-match? (when-not (empty? predicate-attribs)
+                            (fn [attribs]
+                              (every?
+                                (fn [[k pred]]
+                                  (pred (attribs k)))
+                                predicate-attribs)))]
+    (search-all* element target-tag? literal-attribs predicates-match? case-sensitive?)))
 
 
 (defn search
