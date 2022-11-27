@@ -377,6 +377,14 @@
          coll)))))
 
 
+(defn rows->columns
+  "Takes a sequence of same-sized rows (a grid) and returns a vector of the columns instead. (eager)"
+  [rows]
+  (->> (apply interleave rows)
+       (partition (count rows))
+       (mapv vec)))
+
+
 (defn A*-search
   "A* implementation translated from https://en.wikipedia.org/wiki/A*_search_algorithm#Pseudocode
   nil elements are not permitted. (might implement later)
