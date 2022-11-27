@@ -8,6 +8,7 @@
             [web-utils :as web])
   (:import (clojure.lang IPersistentVector)
            (de.npe.utils LongBox)
+           (java.security MessageDigest)
            (java.time LocalDateTime)
            (java.util Arrays Comparator HashMap HashSet PriorityQueue)
            (java.util.function ToDoubleFunction)))
@@ -96,6 +97,13 @@
           (do (.append sb (byte->hex b))
               (recur bytes))
           (.toString sb))))))
+
+
+(defn md5
+  [^String s]
+  (->> (.getBytes s)
+       (.digest (MessageDigest/getInstance "MD5"))
+       bytes->hex))
 
 
 (defn rpartial

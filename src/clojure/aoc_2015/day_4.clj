@@ -1,8 +1,7 @@
 (ns aoc-2015.day-4
   (:use [criterium.core])
   (:require [clojure.string :as string]
-            [aoc-utils :as u])
-  (:import [java.security MessageDigest]))
+            [aoc-utils :as u]))
 
 ;; --- Day 4: The Ideal Stocking Stuffer --- https://adventofcode.com/2015/day/4
 
@@ -10,17 +9,10 @@
   (u/slurp-resource "inputs/aoc_2015/day-4.txt"))
 
 
-(defn md5
-  [^String s]
-  (->> (.getBytes s)
-       (.digest (MessageDigest/getInstance "MD5"))
-       u/bytes->hex))
-
-
 (defn hash-fn
   [secret hash-target]
   (fn [n]
-    (let [hash (md5 (str secret n))]
+    (let [hash (u/md5 (str secret n))]
       (when (string/starts-with? hash hash-target)
         [n hash]))))
 
