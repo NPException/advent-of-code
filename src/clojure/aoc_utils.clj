@@ -106,6 +106,13 @@
        bytes->hex))
 
 
+(defn rcomp
+  "Like `comp` but composes functions in reverse order."
+  ([f g] (comp g f))
+  ([f g & fs]
+   (reduce rcomp (list* f g fs))))
+
+
 (defn rpartial
   "Takes a function f and fewer than the normal arguments to f, and
   returns a fn that takes a variable number of additional args. When
