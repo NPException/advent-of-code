@@ -131,8 +131,12 @@
 
 (defmacro nth-in
   "Macro to do highly efficient lookup in nested vectors."
-  [v is]
-  `(-> ~v ~@(map (fn [i] (list `nth i)) is)))
+  ([v is]
+   `(-> ~v ~@(map (fn [i] (list `nth i)) is)))
+  ([v is not-found]
+   `(-> ~v
+        ~@(map (fn [i] (list `nth i nil)) (butlast is))
+        ~(list `nth (last is) not-found))))
 
 
 (defn cpmap
