@@ -34,30 +34,56 @@
   (= checksum (gen-checksum name)))
 
 
-
-(defn part-1
+(defn real-rooms
   [input]
   (->> (str/split-lines input)
        (map parse-room)
-       (filter real-room?)
+       (filter real-room?)))
+
+
+(defn part-1
+  [input]
+  (->> (real-rooms input)
        (map second)
        (apply +)))
 
 
+(def offset (int \a))
+
+(defn shift
+  [letter n]
+  (-> (int letter)
+      (- offset)
+      (+ n)
+      (mod 26)
+      (+ offset)
+      (char)))
+
+
+(defn decrypt-name
+  [[name sector-id]]
+  [(->> name
+        (mapv #(if (= % \-) " " (shift % sector-id)))
+        (apply str))
+   sector-id])
+
+
 (defn part-2
   [input]
-  )
+  (->> (real-rooms input)
+       (map decrypt-name)
+       (u/first-match #(str/includes? (first %) "northpole"))
+       (second)))
 
 
 (comment
   ;; Part 1
   (part-1 test-input)                                       ; => 1514
-  (part-1 task-input)                                       ; =>
+  (part-1 task-input)                                       ; => 185371
   (crit/quick-bench (part-1 task-input))
 
   ;; Part 2
-  (part-2 test-input)                                       ; =>
-  (part-2 task-input)                                       ; =>
+  (part-2 task-input)                                       ; => 984
   (crit/quick-bench (part-2 task-input))
 
   )
