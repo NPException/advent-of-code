@@ -580,6 +580,21 @@
        (doseq [egg-element eggs]
          (println " " (first (web/body egg-element))))))))
 
+
+(defn start-next-unsolved-day
+  "Looks for the first day which doesn't have a namespace, and calls `start-day` for it."
+  []
+  (->> (range)
+       (map #(+ 2015 %))
+       (mapcat (fn [year]
+                 (map #(vector year %) (range 1 26))))
+       (first-match
+         (fn [[year day]]
+           (not (.exists (io/file (str "./src/clojure/aoc_" year "/day_" day ".clj"))))))
+       (apply start-day)))
+
+
 (comment
   (start-day)
+  (start-next-unsolved-day)
   )
