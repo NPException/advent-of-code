@@ -14,6 +14,10 @@
            (java.util.function ToDoubleFunction)))
 
 
+(set! *warn-on-reflection* true)
+(set! *unchecked-math* :warn-on-boxed)
+
+
 (defn slurp-resource
   [path]
   (slurp (io/resource path)))
@@ -400,6 +404,39 @@
        (mapv vec)))
 
 
+(defmacro fn->
+  "Threads the expr through the forms.
+  Inserts x as the first item (fn position) in the first form, making a list of it if it is not a list already.
+  If there are more forms, inserts the first form as the first item in second form, etc."
+  [x & forms]
+  (loop [x x,
+         forms forms]
+    (if forms
+      (let [form (first forms)
+            threaded (if (seq? form)
+                       (with-meta `(~x ~@form) (meta form))
+                       `(~x ~form))]
+        (recur threaded (next forms)))
+      x)))
+
+
+(defn +l
+  "+ pre type-hinted for longs"
+  ^long
+  ([] 0)
+  ([^long x] x)
+  ([^long x ^long y] (+ x y))
+  ([x y & more] (reduce +l (+l x y) more)))
+
+(defn +d
+  "+ pre type-hinted for doubles"
+  ^double
+  ([] 0)
+  ([^double x] x)
+  ([^double x ^double y] (+ x y))
+  ([x y & more] (reduce +d (+d x y) more)))
+
+
 (defn A*-search
   "A* implementation translated from https://en.wikipedia.org/wiki/A*_search_algorithm#Pseudocode
   nil elements are not permitted. (might implement later)
@@ -608,7 +645,7 @@
   "Looks for the first day which doesn't have a namespace, and calls `start-day` for it."
   []
   (->> (range)
-       (map #(+ 2015 %))
+       (map #(+ 2015 ^long %))
        (mapcat (fn [year]
                  (map #(vector year %) (range 1 26))))
        (first-match

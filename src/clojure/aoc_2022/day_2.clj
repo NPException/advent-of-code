@@ -48,16 +48,15 @@
        (apply +)))
 
 
-(def determine-move
-  {0 loses-to
-   1 identity
-   2 wins-against})
-
 (defn part-2
   [input]
   (->> (parse-input input)
        (map (fn [[opp goal]]
-              [opp ((determine-move goal) opp)]))
+              [opp (u/fn-> {0 loses-to
+                            1 identity
+                            2 wins-against}
+                           goal
+                           opp)]))
        (map score)
        (apply +)))
 
