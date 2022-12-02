@@ -29,7 +29,7 @@
 
 
 (defn image-from-rgb
-  "Takes a sequence of sequences, containing rgb color values.
+  "Takes `pixels` (a sequence of sequences, containing rgb color values).
   'pixel-type' can be one of :int :byte-tuple :float-tuple.
   It signals how every pixel is represented.
   :int -> every pixel is a single 24bit rgb value represented as an int
