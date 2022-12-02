@@ -12,7 +12,8 @@
   [input]
   (->> (u/read-as-vector input)
        (mapv '{A 0, B 1, C 2, X 0, Y 1, Z 2})
-       (u/vpartition 2)))
+       (u/vpartition 2)
+       vec))
 
 
 (def task-input (parse-input (u/slurp-resource "inputs/aoc_2022/day-2.txt")))
