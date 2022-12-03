@@ -78,7 +78,6 @@
        (img/record-as-gif
          (doto (io/file "visualizations/aoc_2016/day_8_2.gif")
            (-> .getParentFile .mkdirs))
-         20
          (img/on-off-image-fn 16 #(= % \#) [255, 116, 0] [128, 0, 72]))
        (last)
        (apply concat)

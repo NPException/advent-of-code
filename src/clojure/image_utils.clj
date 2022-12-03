@@ -206,15 +206,25 @@
 
 (defn record-as-gif
   "Stores the given sequence of 2-dimensional data as a GIF.
-  The GIF will loop, and show the last frame for 5 seconds."
-  ([out delay-ms create-image-fn data-seq]
+  `delay-ms` will be 30 by default. `loop?` is true by default.
+  If `loop?` is true, the last frame will be repeated for 5 seconds."
+  ([output image-fn data-seq]
+   (record-as-gif output image-fn nil data-seq))
+  ([output image-fn
+    {:keys [delay-ms loop?] :or {delay-ms 30, loop? true}}
+    data-seq]
    (print "Writing GIF... ")
    (flush)
-   (write-to-gif out delay-ms 0
-     (lazy-cat
-       (map create-image-fn (drop-last data-seq))
-       (let [amount (int (* 5.0 (/ 1000.0 (int delay-ms))))]
-         (repeat amount (create-image-fn (last data-seq))))))
+   (write-to-gif output delay-ms (if loop? 0 1)
+     (->> data-seq
+          (partition-all 2 1)
+          (mapcat (fn [[data next-data]]
+                    (if (and loop? (nil? next-data))
+                      ;; repeat the last frame for 5 seconds
+                      (let [gif-frame-delay (quot (int delay-ms) 10)
+                            gif-fps         (/ 100.0 gif-frame-delay)]
+                        (repeat (int (* 5 gif-fps)) (image-fn data)))
+                      [(image-fn data)])))))
    (println "Done!")
    data-seq))
 
