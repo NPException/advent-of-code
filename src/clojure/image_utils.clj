@@ -137,10 +137,22 @@
    (image-from-data mapping-fn 1.0 data))
   ([mapping-fn scale data]
    (image-from-rgb scale
-     (map #(map mapping-fn %) data)))
+     (mapv #(mapv mapping-fn %) data)))
   ([mapping-fn pixel-type scale data]
    (image-from-rgb pixel-type scale
-     (map #(map mapping-fn %) data))))
+     (mapv #(mapv mapping-fn %) data))))
+
+
+(defn on-off-image-fn
+  "Returns a simple image-creation function for true/false data sets.
+  `scale`: multiplier for the final image size
+  `on?`: function that takes a datapoint as an argument
+  `on-rgb`: rgb value that is used for every datapoint for which `on?` returns logical true.
+  `off-rgb`: rgb value that is used for every datapoint for which `on?` returns logical true."
+  [scale on? on-rgb off-rgb]
+  (let [mapping-fn #(if (on? %) on-rgb off-rgb)]
+    (fn [data]
+      (image-from-data mapping-fn scale data))))
 
 
 (defn write-png
@@ -180,17 +192,31 @@
                   next-frame)))))
         data)
       (finish-recording! [_]
-        (println "Stop recording")
         (swap! frame-atom
           (fn [frame]
             (when frame
               (deliver frame nil)
               nil)))
         ;; wait for writer to finish
-        (println "Wait for GIF to be written")
+        (print "Writing GIF... ")
+        (flush)
         @writer-thread
-        (println "GIF written.")))))
+        (println "Done!")))))
 
+
+(defn record-as-gif
+  "Stores the given sequence of 2-dimensional data as a GIF.
+  The GIF will loop, and show the last frame for 5 seconds."
+  ([out delay-ms create-image-fn data-seq]
+   (print "Writing GIF... ")
+   (flush)
+   (write-to-gif out delay-ms 0
+     (lazy-cat
+       (map create-image-fn (drop-last data-seq))
+       (let [amount (int (* 5.0 (/ 1000.0 (int delay-ms))))]
+         (repeat amount (create-image-fn (last data-seq))))))
+   (println "Done!")
+   data-seq))
 
 
 (comment

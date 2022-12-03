@@ -86,7 +86,7 @@
     (let [f (io/file "visualizations/aoc_2016/day_8.gif")]
       (.mkdirs (.getParentFile f))
       f)
-    (quot 1000 30)
+    20
     0
     (partial img/image-from-data
       #(if (= % \#)
@@ -112,7 +112,7 @@
                         (instruction record screen))
                       (record blank-screen))
                     ;; few more frames so the result can be seen
-                    (record-times record 60)
+                    (record-times record (* 3 50))
                     ;; continue with result
                     (apply concat)
                     (u/count-matching #(= % \#)))]
