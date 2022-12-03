@@ -1,6 +1,5 @@
 (ns aoc-2022.day-3
   (:require [aoc-utils :as u]
-            [clojure.math :as math]
             [clojure.set :as set]
             [clojure.string :as str]
             [criterium.core :as crit]))
@@ -14,17 +13,6 @@
 
 (def test-input "vJrwpWtwJgWrhcsFMMfFFhFp\njqHRNqRjqzjGDLGLrsFMfFZSrLrFZsSL\nPmmdzqPrVvPwwTWBwg\nwMqvLMZHhHMvwLHjbvcjnnSBnvTQFn\nttgJtRGJQctTZtZT\nCrZsJsPPZsGzwwsLwLmpwMDw")
 
-
-(defn parse-input
-  [input]
-  (->> (str/split-lines input)
-       (mapv (fn [line]
-               (let [len  (count line)
-                     half (/ len 2)]
-                 [(set (subs line 0 half))
-                  (set (subs line half))])))))
-
-
 (defn priority
   [char]
   (let [c (int char)]
@@ -35,7 +23,12 @@
 
 (defn part-1
   [input]
-  (->> (parse-input input)
+  (->> (str/split-lines input)
+       (mapv (fn [line]
+               (let [len  (count line)
+                     half (/ len 2)]
+                 [(set (subs line 0 half))
+                  (set (subs line half))])))
        (mapcat #(apply set/intersection %))
        (map priority)
        (apply +)))
@@ -43,7 +36,13 @@
 
 (defn part-2
   [input]
-  )
+  (->> (str/split-lines input)
+       (map set)
+       (partition 3)
+       (map #(apply set/intersection %))
+       (map first)
+       (map priority)
+       (apply +)))
 
 
 (comment
@@ -53,8 +52,8 @@
   (crit/quick-bench (part-1 task-input))
 
   ;; Part 2
-  (part-2 test-input)                                       ; =>
-  (part-2 task-input)                                       ; =>
+  (part-2 test-input)                                       ; => 70
+  (part-2 task-input)                                       ; => 2805
   (crit/quick-bench (part-2 task-input))
 
   )
