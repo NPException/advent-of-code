@@ -76,8 +76,7 @@
   (->> (parse-instructions input)
        (reductions #(%2 %1) blank-screen)
        (img/record-as-gif
-         (doto (io/file "visualizations/aoc_2016/day_8_2.gif")
-           (-> .getParentFile .mkdirs))
+         (img/gif-file "aoc_2016/day_8_2")
          (img/on-off-image-fn 16 #(= % \#) [255, 116, 0] [128, 0, 72]))
        (last)
        (apply concat)

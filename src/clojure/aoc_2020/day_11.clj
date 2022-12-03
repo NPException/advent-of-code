@@ -53,11 +53,10 @@
          (take-while #(apply not= %))
          (map second)
          (img/record-as-gif
-           (doto (io/file (str "visualizations/aoc_2020/day_11_part_" ani-id ".gif"))
-             (-> .getParentFile .mkdirs))
+           (img/gif-file (str "aoc_2020/day_11_part_" ani-id))
            (partial img/image-from-data
-             {\. 0x0E3C5C
-              \L 0x738C9D
+             {\. 0x531055
+              \L 0x679C38
               \# 0x90C165}
              16)
            {:delay-ms 250

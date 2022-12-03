@@ -83,9 +83,7 @@
 (defn create-recorder
   []
   (img/start-gif-recorder
-    (let [f (io/file "visualizations/aoc_2016/day_8.gif")]
-      (.mkdirs (.getParentFile f))
-      f)
+    (img/gif-file "aoc_2016/day_8")
     20
     0
     (partial img/image-from-data

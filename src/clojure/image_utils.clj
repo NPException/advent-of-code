@@ -1,14 +1,27 @@
 (ns image-utils
   (:require [clojure.java.io :as io]
-            [clojure.math :as math])
-  (:import (java.awt RenderingHints)
+            [clojure.math :as math]
+            [clojure.string :as str])
+  (:import (de.npe.imageutils GifWriter)
+           (java.awt RenderingHints)
+           (java.awt.image BufferedImage)
+           (java.io BufferedOutputStream)
            (javax.imageio ImageIO)
-           [javax.imageio.stream MemoryCacheImageOutputStream]
-           [de.npe.imageutils GifWriter]
-           [java.awt.image BufferedImage]))
+           (javax.imageio.stream MemoryCacheImageOutputStream)))
 
 (set! *warn-on-reflection* true)
 (set! *unchecked-math* :warn-on-boxed)
+
+
+(defn gif-file
+  "Create a File instance in the visualizations subfolder for the given path.
+  '.gif' will be appended to the filename if it doesn't already end with it."
+  [path]
+  (doto (io/file "visualizations"
+          (cond-> path
+            (not (str/ends-with? path ".gif"))
+            (str ".gif")))
+    (-> .getParentFile .mkdirs)))
 
 
 (defn write-to-gif
@@ -17,8 +30,7 @@
   `delay-ms` the delay in ms between each frame. Note that delays have a resolution of 10 ms.
   `loop-limit` is the number of times the gif should run. 0 means loop forever. Max is 65536."
   [out delay-ms loop-limit images]
-  (with-open [os         (io/output-stream out)
-              image-os   (MemoryCacheImageOutputStream. os)
+  (with-open [image-os   (MemoryCacheImageOutputStream. (BufferedOutputStream. (io/output-stream out) (* 8 1024 1024)))
               gif-writer (GifWriter. image-os (int delay-ms) (int loop-limit))]
     (doseq [image images]
       (when-not (instance? BufferedImage image)
