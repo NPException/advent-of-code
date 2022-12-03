@@ -21,16 +21,26 @@ public final class GifWriter implements AutoCloseable {
 	private final ImageWriter writer;
 	private final ImageWriteParam params;
 	private final int delay;
-	private final boolean loop;
+	private final int loopLimit;
 
 	private IIOMetadata metadata;
 
-	public GifWriter(ImageOutputStream out, int delayms, boolean loop) {
+	public GifWriter(ImageOutputStream out, int delayms, int loopLimit) {
+		if (loopLimit > 0x010000) {
+			throw new IllegalArgumentException("loopLimit must not exceed " + 0x010000);
+		}
 		delay = delayms / 10;
-		this.loop = loop;
+		this.loopLimit = loopLimit;
 		writer = ImageIO.getImageWritersBySuffix("gif").next();
 		writer.setOutput(out);
 		params = writer.getDefaultWriteParam();
+	}
+
+	public static byte[] intTo2ByteLittleEndian(int n) {
+		byte[] b = new byte[2];
+		b[0] = (byte) (n & 0xFF);
+		b[1] = (byte) (n >> 8 & 0xFF);
+		return b;
 	}
 
 	private IIOMetadata initMetaData(BufferedImage firstImage) throws IOException {
@@ -48,16 +58,25 @@ public final class GifWriter implements AutoCloseable {
 		gceNode.setAttribute("transparentColorIndex", "0");
 
 		IIOMetadataNode commentsNode = getNode(root, "CommentExtensions");
-		commentsNode.setAttribute("CommentExtension", "Created by: https://memorynotfound.com");
+		commentsNode.setAttribute("CommentExtension", "Created by: https://github.com/NPException");
 
-		IIOMetadataNode appExtensionsNode = getNode(root, "ApplicationExtensions");
-		IIOMetadataNode child = new IIOMetadataNode("ApplicationExtension");
-		child.setAttribute("applicationID", "NETSCAPE");
-		child.setAttribute("authenticationCode", "2.0");
 
-		int loopContinuously = loop ? 0 : 1;
-		child.setUserObject(new byte[] {0x1, (byte) (loopContinuously & 0xFF), 0});
-		appExtensionsNode.appendChild(child);
+		if (loopLimit != 1) {
+			IIOMetadataNode appExtensionsNode = getNode(root, "ApplicationExtensions");
+			IIOMetadataNode child = new IIOMetadataNode("ApplicationExtension");
+			child.setAttribute("applicationID", "NETSCAPE");
+			child.setAttribute("authenticationCode", "2.0");
+
+			if (loopLimit == 0) {
+				// loop continuously
+				child.setUserObject(new byte[] {0x1, 0, 0});
+			} else {
+				// decrement loopLimit, as the GIF standard defines loops as number of iterations after the first run
+				var loopBytes = intTo2ByteLittleEndian(loopLimit - 1);
+				child.setUserObject(new byte[] {0x1, loopBytes[0], loopBytes[1]});
+			}
+			appExtensionsNode.appendChild(child);
+		}
 		metadata.setFromTree(metaFormatName, root);
 
 		writer.prepareWriteSequence(null);
@@ -78,8 +97,8 @@ public final class GifWriter implements AutoCloseable {
 
 	public void writeToSequence(BufferedImage img) throws IOException {
 		IIOMetadata metadata = this.metadata != null
-				  ? this.metadata
-				  : (this.metadata = initMetaData(img));
+				? this.metadata
+				: (this.metadata = initMetaData(img));
 		writer.writeToSequence(new IIOImage(img, null, metadata), params);
 	}
 

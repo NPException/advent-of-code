@@ -18,7 +18,7 @@ public final class CreateGifExample {
 				  new File("H:/downloads/giftest/5.png"),
 		};
 		try (ImageOutputStream output = new FileImageOutputStream(outFile);
-			  GifWriter writer = new GifWriter(output, 500, true)) {
+			  GifWriter writer = new GifWriter(output, 500, 0)) {
 			for (File image : images) {
 				writer.writeToSequence(ImageIO.read(image));
 			}

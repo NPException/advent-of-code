@@ -13,12 +13,16 @@
 
 (defn write-to-gif
   "Writes a sequence of BufferedImages as a gif to the desired output.
-  out is coerced to an OutputStream via clojure.java.io/output-stream."
-  [out delay-ms loop? images]
+  `out` is coerced to an OutputStream via clojure.java.io/output-stream.
+  `delay-ms` the delay in ms between each frame. Note that delays have a resolution of 10 ms.
+  `loop-limit` is the number of times the gif should run. 0 means loop forever. Max is 65536."
+  [out delay-ms loop-limit images]
   (with-open [os         (io/output-stream out)
               image-os   (MemoryCacheImageOutputStream. os)
-              gif-writer (GifWriter. image-os delay-ms loop?)]
-    (doseq [^BufferedImage image images]
+              gif-writer (GifWriter. image-os (int delay-ms) (int loop-limit))]
+    (doseq [image images]
+      (when-not (instance? BufferedImage image)
+        (throw (ex-info "image is not a BufferedImage" {:image image})))
       (.writeToSequence gif-writer image))))
 
 
@@ -134,7 +138,7 @@
   ([mapping-fn scale data]
    (image-from-rgb scale
      (map #(map mapping-fn %) data)))
-  ([pixel-type mapping-fn scale data]
+  ([mapping-fn pixel-type scale data]
    (image-from-rgb pixel-type scale
      (map #(map mapping-fn %) data))))
 
@@ -144,19 +148,80 @@
   (ImageIO/write image "png" (io/file file)))
 
 
+(defprotocol GifRecorder
+  (record-frame! [this data] "adds a frame to the gif, and returns data")
+  (finish-recording! [this] "stops the recording and finalizes writing to disk"))
+
+
+(defn start-gif-recorder
+  [out delay-ms loop-limit create-image-fn]
+  ; the current frame is a promise of a vector, containing the image data
+  ; and the promise for the next frame. If the promise returns nil, ends the recording.
+  (let [first-frame   (promise)
+        frame-atom    (atom first-frame)
+        writer-thread (future
+                        (write-to-gif out delay-ms loop-limit
+                          (->> @first-frame
+                               (iterate #(deref (second %)))
+                               (take-while some?)
+                               (map first))))]
+    (println "Start GIF recording")
+    ;; create and return the recorder
+    (reify GifRecorder
+      (record-frame! [_ data]
+        ;; prepare the image in a delay, just in case `swap!` is run multiple times because I misuse the recorder.
+        (let [image (delay (create-image-fn data))]
+          (swap! frame-atom
+            (fn [frame]
+              ;; if the atom is empty, recording has already finished
+              (when frame
+                (let [next-frame (promise)]
+                  (deliver frame [@image next-frame])
+                  next-frame)))))
+        data)
+      (finish-recording! [_]
+        (println "Stop recording")
+        (swap! frame-atom
+          (fn [frame]
+            (when frame
+              (deliver frame nil)
+              nil)))
+        ;; wait for writer to finish
+        (println "Wait for GIF to be written")
+        @writer-thread
+        (println "GIF written.")))))
+
+
+
 (comment
   ;; 30x30 image with nine squares:
   ;; black  gray    white
   ;; red    green   blue
   ;; yellow magenta cyan
+  (def pixels [[[0 0 0] [0.5 0.5 0.5] [1 1 1]]
+               [[1 0 0] [0 1 0] [0 0 1]]
+               [[1 1 0] [1 0 1] [0 1 1]]])
+
   (def img (image-from-rgb
              :floats
              10.0
-             [[[0 0 0] [0.5 0.5 0.5] [1 1 1]]
-              [[1 0 0] [0 1 0] [0 0 1]]
-              [[1 1 0] [1 0 1] [0 1 1]]]))
+             pixels))
 
   (write-png img "test.png")
+
+
+  (defn rot [[a b c]]
+    [c a b])
+
+  (let [rec (start-gif-recorder "test.gif" 500 0
+              #(image-from-data identity :floats 50.0 %))]
+    (->> pixels
+         (record-frame! rec)
+         (mapv rot)
+         (record-frame! rec)
+         (mapv rot)
+         (record-frame! rec))
+    (finish-recording! rec))
 
   ;; TODO: visualize every iteration of 2020 day 11
   )
