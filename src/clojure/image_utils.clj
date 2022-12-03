@@ -259,6 +259,6 @@
          (record-frame! rec))
     (finish-recording! rec))
 
-  ;; TODO: visualize every iteration of 2020 day 11
+  ;
   )
 
