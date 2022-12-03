@@ -1,6 +1,9 @@
 (ns aoc-2020.day-11
-  (:require [clojure.string :as string]
-            [aoc-utils :as u]))
+  (:require
+    [clojure.java.io :as io]
+    [clojure.string :as string]
+    [aoc-utils :as u]
+    [image-utils :as img]))
 
 ;; --- Day 11: Seating System --- https://adventofcode.com/2020/day/11
 
@@ -27,19 +30,19 @@
 (defn process-row
   [tracers leave-threshold seats y row]
   (into []
-        (map-indexed (partial process-seat tracers leave-threshold seats y))
-        row))
+    (map-indexed (partial process-seat tracers leave-threshold seats y))
+    row))
 
 
 (defn process-seats
   [tracers leave-threshold seats]
   (into []
-        (map-indexed (partial process-row tracers leave-threshold seats))
-        seats))
+    (map-indexed (partial process-row tracers leave-threshold seats))
+    seats))
 
 
 (defn find-equilibrium-seats
-  [seats build-tracer leave-threshold]
+  [ani-id seats build-tracer leave-threshold]
   (let [tracers (vec (for [ox (range -1 2)
                            oy (range -1 2)
                            :when (not= ox oy 0)]
@@ -48,8 +51,18 @@
          (iterate (partial process-seats tracers leave-threshold))
          (partition 2 1)
          (take-while #(apply not= %))
+         (map second)
+         (img/record-as-gif
+           (doto (io/file (str "visualizations/aoc_2020/day_11_part_" ani-id ".gif"))
+             (-> .getParentFile .mkdirs))
+           (partial img/image-from-data
+             {\. 0x0E3C5C
+              \L 0x738C9D
+              \# 0x90C165}
+             16)
+           {:delay-ms 250
+            :loop?    false})
          last
-         second
          (apply concat)
          (filter #(= % \#))
          count)))
@@ -69,7 +82,7 @@
 
 (defn part-1
   [input]
-  (find-equilibrium-seats (string/split-lines input) build-tracer-p1 4))
+  (find-equilibrium-seats 1 (string/split-lines input) build-tracer-p1 4))
 
 
 
@@ -90,7 +103,7 @@
 
 (defn part-2
   [input]
-  (find-equilibrium-seats (string/split-lines input) build-tracer-p2 5))
+  (find-equilibrium-seats 2 (string/split-lines input) build-tracer-p2 5))
 
 
 (comment
