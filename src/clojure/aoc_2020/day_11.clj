@@ -1,8 +1,6 @@
 (ns aoc-2020.day-11
   (:require
     [aoc-utils :as u]
-    [clojure.java.io :as io]
-    [clojure.math :as math]
     [clojure.string :as string]
     [image-utils :as img]))
 
@@ -52,7 +50,8 @@
     (u/rcomp
       img/normalize
       (partial img/image-from-data
-        #(vector % % %)
+        (img/color-fade-mapping [[0.25 0.0 0.2]
+                                 [1.0 0.9 0.0]])
         16))
     data))
 

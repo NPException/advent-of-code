@@ -420,6 +420,22 @@
       x)))
 
 
+;; macros for comparing more than 2 numbers at a time, in order to get speed benefits from inlining
+;; the 2-arity variants of the respective clojure.core functions.
+
+(defmacro lt [a b c & vals]
+  `(and ~@(map #(apply list `clojure.core/< %) (partition 2 1 (concat [a b c] vals)))))
+
+(defmacro gt [a b c & vals]
+  `(and ~@(map #(apply list `clojure.core/> %) (partition 2 1 (concat [a b c] vals)))))
+
+(defmacro lte [a b c & vals]
+  `(and ~@(map #(apply list `clojure.core/<= %) (partition 2 1 (concat [a b c] vals)))))
+
+(defmacro gte [a b c & vals]
+  `(and ~@(map #(apply list `clojure.core/>= %) (partition 2 1 (concat [a b c] vals)))))
+
+
 (defn +l
   "+ pre type-hinted for longs"
   ^long
@@ -435,6 +451,12 @@
   ([^double x] x)
   ([^double x ^double y] (+ x y))
   ([x y & more] (reduce +d (+d x y) more)))
+
+
+(defn lerp
+  "Linear interpolation between two values"
+  [^double a ^double b ^double amount]
+  (+ a (* amount (- b a))))
 
 
 (defn A*-search
