@@ -13,14 +13,10 @@
 (set! *unchecked-math* :warn-on-boxed)
 
 
-(defn gif-file
-  "Create a File instance in the visualizations subfolder for the given path.
-  '.gif' will be appended to the filename if it doesn't already end with it."
+(defn file
+  "Create a File instance in the visualizations subfolder for the given path."
   [path]
-  (doto (io/file "visualizations"
-          (cond-> path
-            (not (str/ends-with? path ".gif"))
-            (str ".gif")))
+  (doto (io/file "visualizations" path)
     (-> .getParentFile .mkdirs)))
 
 
@@ -167,7 +163,18 @@
       (image-from-data mapping-fn scale data))))
 
 
-(defn write-png
+(defn color-fade-mapping
+  "Returns a mapping-fn for use in `image-from-data`. It requires data to be floats between 0.0 and 1.0.
+  Will lerp between the colors according to the value."
+  ([colors]
+   (color-fade-mapping 0.0 1.0 colors))
+  ([min-value max-value colors]
+   (fn [^float value]
+     ; TODO: research how to interpolate colors without it looking like garbage in between.
+     )))
+
+
+(defn write-png!
   [^BufferedImage image file]
   (ImageIO/write image "png" (io/file file)))
 
@@ -177,7 +184,7 @@
   (finish-recording! [this] "stops the recording and finalizes writing to disk"))
 
 
-(defn start-gif-recorder
+(defn start-gif-recorder!
   [out delay-ms loop-limit create-image-fn]
   ; the current frame is a promise of a vector, containing the image data
   ; and the promise for the next frame. If the promise returns nil, ends the recording.
@@ -216,12 +223,12 @@
         (println "Done!")))))
 
 
-(defn record-as-gif
+(defn record-as-gif!
   "Stores the given sequence of 2-dimensional data as a GIF.
   `delay-ms` will be 30 by default. `loop?` is true by default.
   If `loop?` is true, the last frame will be repeated for 5 seconds."
   ([output image-fn data-seq]
-   (record-as-gif output image-fn nil data-seq))
+   (record-as-gif! output image-fn nil data-seq))
   ([output image-fn
     {:keys [delay-ms loop?] :or {delay-ms 30, loop? true}}
     data-seq]
@@ -255,13 +262,13 @@
              10.0
              pixels))
 
-  (write-png img "test.png")
+  (write-png! img "test.png")
 
 
   (defn rot [[a b c]]
     [c a b])
 
-  (let [rec (start-gif-recorder "test.gif" 500 0
+  (let [rec (start-gif-recorder! "test.gif" 500 0
               #(image-from-data identity :floats 50.0 %))]
     (->> pixels
          (record-frame! rec)

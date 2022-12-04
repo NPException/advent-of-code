@@ -1,8 +1,9 @@
 (ns aoc-2020.day-11
   (:require
-    [clojure.java.io :as io]
-    [clojure.string :as string]
     [aoc-utils :as u]
+    [clojure.java.io :as io]
+    [clojure.math :as math]
+    [clojure.string :as string]
     [image-utils :as img]))
 
 ;; --- Day 11: Seating System --- https://adventofcode.com/2020/day/11
@@ -41,8 +42,35 @@
     seats))
 
 
+; TODO: Try to convert this to a generalized function in image-utils.
+(defn heatmap!
+  [part-id data-seq]
+  (let [frame-count (double (count data-seq))
+        first-frame (first data-seq)
+        width       (count (first first-frame))
+        height      (count first-frame)
+        heat-fn     #(if (= \# %2) (inc ^long %1) %1)
+        normalize   #(-> % (/ frame-count) (* 255) (math/round))
+        heatstrip   (loop [heatstrip (vec (repeat (* width height) 0))
+                           [frame & more] data-seq]
+                      (if (nil? more)
+                        (mapv normalize heatstrip)
+                        (recur
+                          (mapv heat-fn heatstrip (mapcat identity frame))
+                          more)))
+        heatmap     (partition width heatstrip)]
+    (println (apply max heatstrip))
+    (img/write-png!
+      (img/image-from-data
+        (fn [x] [x x x])
+        16
+        heatmap)
+      (io/file (str "visualizations/aoc_2020/day_11_part_" part-id "_heatmap.png"))))
+  data-seq)
+
+
 (defn find-equilibrium-seats
-  [ani-id seats build-tracer leave-threshold]
+  [part-id seats build-tracer leave-threshold]
   (let [tracers (vec (for [ox (range -1 2)
                            oy (range -1 2)
                            :when (not= ox oy 0)]
@@ -52,15 +80,16 @@
          (partition 2 1)
          (take-while #(apply not= %))
          (map second)
-         (img/record-as-gif
-           (img/gif-file (str "aoc_2020/day_11_part_" ani-id))
-           (partial img/image-from-data
-             {\. 0x531055
-              \L 0x679C38
-              \# 0x90C165}
-             16)
-           {:delay-ms 250
-            :loop?    false})
+         #_(heatmap! part-id)
+         #_(img/record-as-gif!
+             (img/file (str "aoc_2020/day_11_part_" part-id ".gif"))
+             (partial img/image-from-data
+               {\. 0x531055
+                \L 0x679C38
+                \# 0x90C165}
+               16)
+             {:delay-ms 250
+              :loop?    false})
          last
          (apply concat)
          (filter #(= % \#))

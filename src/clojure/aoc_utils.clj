@@ -409,10 +409,10 @@
   Inserts x as the first item (fn position) in the first form, making a list of it if it is not a list already.
   If there are more forms, inserts the first form as the first item in second form, etc."
   [x & forms]
-  (loop [x x,
+  (loop [x     x,
          forms forms]
     (if forms
-      (let [form (first forms)
+      (let [form     (first forms)
             threaded (if (seq? form)
                        (with-meta `(~x ~@form) (meta form))
                        `(~x ~form))]

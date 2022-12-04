@@ -82,8 +82,8 @@
 
 (defn create-recorder
   []
-  (img/start-gif-recorder
-    (img/gif-file "aoc_2016/day_8")
+  (img/start-gif-recorder!
+    (img/file "aoc_2016/day_8.gif")
     20
     0
     (partial img/image-from-data
