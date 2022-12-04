@@ -42,31 +42,19 @@
     seats))
 
 
-; TODO: Try to convert this to a generalized function in image-utils.
 (defn heatmap!
-  [part-id data-seq]
-  (let [frame-count (double (count data-seq))
-        first-frame (first data-seq)
-        width       (count (first first-frame))
-        height      (count first-frame)
-        heat-fn     #(if (= \# %2) (inc ^long %1) %1)
-        normalize   #(-> % (/ frame-count) (* 255) (math/round))
-        heatstrip   (loop [heatstrip (vec (repeat (* width height) 0))
-                           [frame & more] data-seq]
-                      (if (nil? more)
-                        (mapv normalize heatstrip)
-                        (recur
-                          (mapv heat-fn heatstrip (mapcat identity frame))
-                          more)))
-        heatmap     (partition width heatstrip)]
-    (println (apply max heatstrip))
-    (img/write-png!
-      (img/image-from-data
-        (fn [x] [x x x])
-        16
-        heatmap)
-      (io/file (str "visualizations/aoc_2020/day_11_part_" part-id "_heatmap.png"))))
-  data-seq)
+  [part-id data]
+  (img/record-as-heatmap!
+    (str "visualizations/aoc_2020/day_11_part_" part-id "_heatmap.png")
+    0
+    (fn [h x]
+      (if (= x \#) (inc h) h))
+    (u/rcomp
+      img/normalize
+      (partial img/image-from-data
+        #(vector % % %)
+        16))
+    data))
 
 
 (defn find-equilibrium-seats
@@ -80,7 +68,7 @@
          (partition 2 1)
          (take-while #(apply not= %))
          (map second)
-         #_(heatmap! part-id)
+         (heatmap! part-id)
          #_(img/record-as-gif!
              (img/file (str "aoc_2020/day_11_part_" part-id ".gif"))
              (partial img/image-from-data

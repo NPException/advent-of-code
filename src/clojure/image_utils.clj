@@ -169,14 +169,14 @@
   ([colors]
    (color-fade-mapping 0.0 1.0 colors))
   ([min-value max-value colors]
-   (fn [^float value]
+   (fn [^double value]
      ; TODO: research how to interpolate colors without it looking like garbage in between.
      )))
 
 
 (defn write-png!
-  [^BufferedImage image file]
-  (ImageIO/write image "png" (io/file file)))
+  [^BufferedImage image out]
+  (ImageIO/write image "png" (io/output-stream out)))
 
 
 (defprotocol GifRecorder
@@ -246,6 +246,43 @@
                       [(image-fn data)])))))
    (println "Done!")
    data-seq))
+
+
+(defn normalize
+  "Takes a 2-dimensional grid of numeric values, and normalizes them to values between 0.0 and 1.0."
+  [grid]
+  (let [strip     (apply concat grid)
+        min-val   (double (apply min strip))
+        max-val   (double (apply max strip))
+        range-val (- max-val min-val)]
+    (map (fn [row]
+           (map (fn [value]
+                  (/ (- (double value) min-val) range-val))
+             row))
+      grid)))
+
+
+(defn record-as-heatmap!
+  "Writes a heatmap of the data sequence as a png.
+  `output` - where to write the image to.
+  `heat-fn` - a 2-arg function which will receive a current value of the heatmap (nil if it's for the first dataset),
+              and a piece of data. The function will return the new value for the heatmap at that point.
+  `image-fn` - function that takes the finished heatmap and creates a BufferedImage from it."
+  [output heat-start-val heat-fn image-fn data-seq]
+  (let [first-frame (first data-seq)
+        width       (count (first first-frame))
+        heatstrip   (loop [heatstrip (repeat heat-start-val)
+                           [frame & more] data-seq]
+                      (if (nil? more)
+                        heatstrip
+                        (recur
+                          (mapv heat-fn heatstrip (mapcat identity frame))
+                          more)))
+        heatmap     (partition width heatstrip)]
+    (write-png!
+      (image-fn heatmap)
+      output))
+  data-seq)
 
 
 (comment
