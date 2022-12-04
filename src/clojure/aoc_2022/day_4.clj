@@ -35,8 +35,7 @@
 (defn overlap?
   [[a1 a2 b1 b2]]
   (or (<= a1 b1 a2)                                         ;; a1-b1-a2-b2  or  a1-b1-b2-a2
-      (<= a1 b2 a2)                                         ;; b1-a1-b2-a2  or  a1-b1-b2-a2
-      (<= b1 a1 b2)))                                       ;; b1-a1-a2-b2
+      (<= b1 a1 b2)))                                       ;; b1-a1-b2-a2  or  b1-a1-a2-b2
 
 
 (defn part-2
