@@ -2,9 +2,6 @@
   (:require [aoc-utils :as u]
             [criterium.core :as crit]))
 
-; (set! *warn-on-reflection* true)
-; (set! *unchecked-math* :warn-on-boxed)
-
 ;; --- Day 6: Tuning Trouble ---
 
 (def task-input (u/slurp-resource "inputs/aoc_2022/day-6.txt"))
@@ -14,14 +11,12 @@
 (defn find-marker
   [input n]
   (->> (partition n 1 input)
-       (map-indexed #(when (apply distinct? %2) %1))
-       (u/first-match some?)
+       (u/index-of #(apply distinct? %))
        (+ n)))
 
 (defn part-1
   [input]
   (find-marker input 4))
-
 
 (defn part-2
   [input]
