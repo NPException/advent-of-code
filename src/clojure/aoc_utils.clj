@@ -29,6 +29,35 @@
   (read-string (str "[" input "]")))
 
 
+(defmacro split-parse
+  "Takes an input string and an alternating number of parsing functions and regular expressions.
+  The string will be split using the regular expressions, and the resulting sections are given as
+  arguments to the respective parsing functions. If a keyword or nil literal is given as a parsing function,
+  it's respective argument is ommited from the output."
+  [input & parse-fns-and-split-regexes]
+  ;; arg validation
+  (when (even? (count parse-fns-and-split-regexes))
+    (throw (IllegalArgumentException. "args must be odd")))
+  ;; do actual macro
+  (let [parse-fns     (take-nth 2 parse-fns-and-split-regexes)
+        split-keys    (take-nth 2 (drop 1 parse-fns-and-split-regexes))
+        split-syms    (repeatedly (count split-keys) #(gensym "split-on_"))
+        result-syms   (repeatedly (count split-keys) #(gensym "result_"))
+        remaining-sym (with-meta (gensym "remaining_") {:tag "java.lang.String"})]
+    `(let [~@(interleave split-syms split-keys)
+           ~remaining-sym ~input
+           ~@(concat (mapcat
+                       (fn [split-sym result-sym]
+                         [[result-sym remaining-sym]
+                          `(str/split ~remaining-sym ~split-sym 2)])
+                       split-syms
+                       result-syms))]
+       [~@(remove #(or (keyword? (first %))
+                       (nil? (first %)))
+            (map list parse-fns result-syms))
+        (~(last parse-fns) ~remaining-sym)])))
+
+
 (defn inspect
   [x]
   (println x)

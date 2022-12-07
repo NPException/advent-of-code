@@ -28,9 +28,10 @@
 (defn parse-moves
   [input]
   (->> (str/split-lines input)
-       (mapv #(mapv parse-long (re-seq #"\d+" %)))
-       (mapv (fn [[n from to]]
-               [n (dec from) (dec to)]))))
+       (mapv #(u/split-parse %
+                nil #"move " parse-long
+                #" from " (comp dec parse-long)
+                #" to " (comp dec parse-long)))))
 
 
 (defn parse-input
