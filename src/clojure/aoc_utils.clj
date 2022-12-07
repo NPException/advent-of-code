@@ -219,16 +219,17 @@
 (defn first-match
   "Returns the first x in coll for which (pred x) returns logical true, else nil"
   [pred coll]
-  (when-let [[x & remain] (seq coll)]
-    (if (pred x) x (recur pred remain))))
+  (loop [[x & more :as coll] (seq coll)]
+    (when coll
+      (if (pred x) x (recur more)))))
 
 
 (defn index-of
   "Returns the index of the first element in coll which matches pred"
   [pred coll]
-  (loop [coll coll
-         i    0]
-    (when-let [[e & more] (seq coll)]
+  (loop [[e & more :as coll] (seq coll)
+         i 0]
+    (when coll
       (if (pred e) i (recur more (inc i))))))
 
 
