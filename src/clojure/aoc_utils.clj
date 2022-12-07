@@ -146,37 +146,6 @@
    (reduce rcomp (list* f g fs))))
 
 
-(defn rpartial
-  "Takes a function f and fewer than the normal arguments to f, and
-  returns a fn that takes a variable number of additional args. When
-  called, the returned function calls f with additional args + args.
-  So compared to `partial`, it passes the partialed args last."
-  ([f] f)
-  ([f arg1]
-   (fn
-     ([] (f arg1))
-     ([x] (f x arg1))
-     ([x y] (f x y arg1))
-     ([x y z] (f x y z arg1))
-     ([x y z & args] (apply f x y z (concat args [arg1])))))
-  ([f arg1 arg2]
-   (fn
-     ([] (f arg1 arg2))
-     ([x] (f x arg1 arg2))
-     ([x y] (f x y arg1 arg2))
-     ([x y z] (f x y z arg1 arg2))
-     ([x y z & args] (apply f x y z (concat args [arg1 arg2])))))
-  ([f arg1 arg2 arg3]
-   (fn
-     ([] (f arg1 arg2 arg3))
-     ([x] (f x arg1 arg2 arg3))
-     ([x y] (f x y arg1 arg2 arg3))
-     ([x y z] (f x y z arg1 arg2 arg3))
-     ([x y z & args] (apply f x y z (concat args [arg1 arg2 arg3])))))
-  ([f arg1 arg2 arg3 & more]
-   (fn [& args] (apply f (concat args [arg1 arg2 arg3] more)))))
-
-
 (defmacro nth-in
   "Macro to do highly efficient lookup in nested vectors."
   ([v is]
@@ -219,18 +188,39 @@
 (defn first-match
   "Returns the first x in coll for which (pred x) returns logical true, else nil"
   [pred coll]
-  (loop [[x & more :as coll] (seq coll)]
-    (when coll
-      (if (pred x) x (recur more)))))
+  (if (instance? Iterable coll)
+    ;; Iterator fastpath
+    (let [it (.iterator ^Iterable coll)]
+      (when (.hasNext it)
+        (loop [e (.next it)]
+          (if (pred e)
+            e
+            (when (.hasNext it)
+              (recur (.next it)))))))
+    ;; seq fallback
+    (loop [[e & more :as coll] (seq coll)]
+      (when coll
+        (if (pred e) e (recur more))))))
 
 
 (defn index-of
   "Returns the index of the first element in coll which matches pred"
   [pred coll]
-  (loop [[e & more :as coll] (seq coll)
-         i 0]
-    (when coll
-      (if (pred e) i (recur more (inc i))))))
+  (if (instance? Iterable coll)
+    ;; Iterator fastpath
+    (let [it (.iterator ^Iterable coll)]
+      (when (.hasNext it)
+        (loop [e (.next it)
+               i 0]
+          (if (pred e)
+            i
+            (when (.hasNext it)
+              (recur (.next it) (inc i)))))))
+    ;; seq fallback
+    (loop [[e & more :as coll] (seq coll)
+           i 0]
+      (when coll
+        (if (pred e) i (recur more (inc i)))))))
 
 
 (defn update!
