@@ -96,8 +96,7 @@
         needed (- 30000000 unused)]
     (->> (vals sizes)
          (filter #(>= % needed))
-         (sort)
-         first)))
+         (apply min))))
 
 
 (comment
