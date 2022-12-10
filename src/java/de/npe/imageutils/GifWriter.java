@@ -96,10 +96,14 @@ public final class GifWriter implements AutoCloseable {
 	}
 
 	public void writeToSequence(BufferedImage img) throws IOException {
-		IIOMetadata metadata = this.metadata != null
-				? this.metadata
-				: (this.metadata = initMetaData(img));
-		writer.writeToSequence(new IIOImage(img, null, metadata), params);
+		if (metadata == null) {
+			writer.prepareWriteSequence(metadata = initMetaData(img));
+		}
+		writer.writeToSequence(new IIOImage(img, null, null), params);
+//		IIOMetadata metadata = this.metadata != null
+//				? this.metadata
+//				: (this.metadata = initMetaData(img));
+//		writer.writeToSequence(new IIOImage(img, null, metadata), params);
 	}
 
 	@Override
@@ -108,5 +112,12 @@ public final class GifWriter implements AutoCloseable {
 			writer.endWriteSequence();
 		}
 		writer.reset();
+	}
+
+
+	private static void time(Runnable action) {
+		var start = System.nanoTime();
+		action.run();
+		System.out.println("Elapsed time: " + (System.nanoTime() - start) / 1000000.0 + " msecs");
 	}
 }
