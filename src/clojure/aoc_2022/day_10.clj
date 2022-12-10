@@ -1,7 +1,9 @@
 (ns aoc-2022.day-10
   (:require [aoc-utils :as u]
             [clojure.string :as str]
-            [criterium.core :as crit]))
+            [criterium.core :as crit])
+  (:import (de.npe.utils LongBox)
+           (java.util ArrayList)))
 
 (set! *warn-on-reflection* true)
 (set! *unchecked-math* :warn-on-boxed)
@@ -27,15 +29,18 @@
 (def test-program (parse-input "addx 15\naddx -11\naddx 6\naddx -3\naddx 5\naddx -1\naddx -8\naddx 13\naddx 4\nnoop\naddx -1\naddx 5\naddx -1\naddx 5\naddx -1\naddx 5\naddx -1\naddx 5\naddx -1\naddx -35\naddx 1\naddx 24\naddx -19\naddx 1\naddx 16\naddx -11\nnoop\nnoop\naddx 21\naddx -15\nnoop\nnoop\naddx -3\naddx 9\naddx 1\naddx -3\naddx 8\naddx 1\naddx 5\nnoop\nnoop\nnoop\nnoop\nnoop\naddx -36\nnoop\naddx 1\naddx 7\nnoop\nnoop\nnoop\naddx 2\naddx 6\nnoop\nnoop\nnoop\nnoop\nnoop\naddx 1\nnoop\nnoop\naddx 7\naddx 1\nnoop\naddx -13\naddx 13\naddx 7\nnoop\naddx 1\naddx -33\nnoop\nnoop\nnoop\naddx 2\nnoop\nnoop\nnoop\naddx 8\nnoop\naddx -1\naddx 2\naddx 1\nnoop\naddx 17\naddx -9\naddx 1\naddx 1\naddx -3\naddx 11\nnoop\nnoop\naddx 1\nnoop\naddx 1\nnoop\nnoop\naddx -13\naddx -19\naddx 1\naddx 3\naddx 26\naddx -30\naddx 12\naddx -1\naddx 3\naddx 1\nnoop\nnoop\nnoop\naddx -9\naddx 18\naddx 1\naddx 2\nnoop\nnoop\naddx 9\nnoop\nnoop\nnoop\naddx -1\naddx 2\naddx -37\naddx 1\naddx 3\nnoop\naddx 15\naddx -21\naddx 22\naddx -6\naddx 1\nnoop\naddx 2\naddx 1\nnoop\naddx -10\nnoop\nnoop\naddx 20\naddx 1\naddx 2\naddx 2\naddx -6\naddx -11\nnoop\nnoop\nnoop"))
 
 
+;; Part 1
+
 (defn update-signal-strength
-  ^long [strength-sum ^long cycle ^long x]
-  (vswap! strength-sum #(+ ^long % (* cycle x)))
+  ^long [^LongBox strength-sum ^long cycle ^long x]
+  (.set strength-sum (+ (.get strength-sum) (* cycle x)))
   x)
+
 
 (defn compile-part-1
   [program]
   (let [signal-strength (gensym "strength-")]
-    `(let [~signal-strength (volatile! 0)]
+    `(let [~signal-strength (LongBox. 0)]
        (->> 1
             ~@(->> program
                    (map-indexed (fn [^long i op] [(inc i) op]))
@@ -46,7 +51,7 @@
                                     (= 0 (mod (- cycle 20) 40))))
                          [`(update-signal-strength ~signal-strength ~cycle) op]
                          [op])))))
-       (deref ~signal-strength))))
+       (.get ~signal-strength))))
 
 
 
@@ -57,28 +62,31 @@
   (compile-part-1 task-program))
 
 
-(defn new-line
-  ^long [^long x]
-  (println)
+;; Part 2
+
+(defn record
+  ^long [^ArrayList grid ^long cycle ^long x]
+  (let [pixel (mod (dec cycle) 40)]
+    (.add grid (if (<= (dec x) pixel (inc x))
+                 \# \space)))
   x)
 
-(defn draw
-  ^long [^long cycle ^long x]
-  (let [pixel (mod (dec cycle) 40)]
-    (print (if (<= (dec x) pixel (inc x))
-             \# \space)))
-  x)
 
 (defn compile-part-2
   [program]
-  `(->> 1
-        ~@(->> program
-               (map-indexed (fn [^long i op] [(inc i) op]))
-               (mapcat
-                 (fn [[cycle op]]
-                   (if (= 0 (mod cycle 40))
-                     [`(draw ~cycle) `(new-line) op]
-                     [`(draw ~cycle) op]))))))
+  (let [grid (gensym "grid-")]
+    `(let [~grid (ArrayList. (* 6 40))]
+       (->> 1
+            ~@(->> program
+                   (map-indexed (fn [^long i op] [(inc i) op]))
+                   (mapcat
+                     (fn [[cycle op]]
+                       [`(record ~grid ~cycle) op]))))
+       (into []
+         (comp (u/partitioning 40)
+               (map str/join))
+         ~grid))))
+
 
 (defmacro part-2-test []
   (compile-part-2 test-program))
@@ -92,16 +100,26 @@
   (part-1-test)                                             ; => 13140
   (part-1)                                                  ; => 14320
   (crit/quick-bench (part-1))
+  (crit/bench (part-1))                                     ; ~5.7 ns
 
   ;; Part 2
   (part-2-test)
-  ; => ##  ##  ##  ##  ##  ##  ##  ##  ##  ##  
-  ;    ###   ###   ###   ###   ###   ###   ### 
-  ;    ####    ####    ####    ####    ####    
-  ;    #####     #####     #####     #####     
-  ;    ######      ######      ######      ####
-  ;    #######       #######       #######     
-  (part-2)                                                  ; => PCPBKAPJ
-  (crit/quick-bench (with-out-str (part-2)))
+  ; => ["##  ##  ##  ##  ##  ##  ##  ##  ##  ##  "
+  ;     "###   ###   ###   ###   ###   ###   ### "
+  ;     "####    ####    ####    ####    ####    "
+  ;     "#####     #####     #####     #####     "
+  ;     "######      ######      ######      ####"
+  ;     "#######       #######       #######     "]
+
+  (part-2)
+  ; => ["###   ##  ###  ###  #  #  ##  ###    ## "
+  ;     "#  # #  # #  # #  # # #  #  # #  #    # "
+  ;     "#  # #    #  # ###  ##   #  # #  #    # "
+  ;     "###  #    ###  #  # # #  #### ###     # "
+  ;     "#    #  # #    #  # # #  #  # #    #  # "
+  ;     "#     ##  #    ###  #  # #  # #     ##  "]
+
+  (crit/quick-bench (part-2))
+  (crit/bench (part-2))                                     ; ~23.2 us
 
   )
