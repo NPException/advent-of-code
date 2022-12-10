@@ -246,7 +246,7 @@
 
 
 (defn write-png!
-  [^BufferedImage image out]
+  [out ^BufferedImage image]
   (ImageIO/write image "png" (io/output-stream out)))
 
 
@@ -351,8 +351,8 @@
                           more)))
         heatmap     (partition width heatstrip)]
     (write-png!
-      (image-fn heatmap)
-      output))
+      output
+      (image-fn heatmap)))
   data-seq)
 
 
@@ -370,7 +370,7 @@
              10.0
              pixels))
 
-  (write-png! img "test.png")
+  (write-png! "test.png" img)
 
 
   (defn rot [[a b c]]
