@@ -1,7 +1,5 @@
 (ns aoc-2022.day-11
   (:require [aoc-utils :as u]
-            [clojure.edn :as edn]
-            [clojure.math :as math]
             [clojure.string :as str]
             [criterium.core :as crit]))
 
@@ -34,15 +32,15 @@
           (assoc &inspect-fn
             (let [[op ^long x] (u/split-parse operation nil #"new = old " str #" " parse-long)]
               (case [op (some? x)]
-                ["+" true] (fn [item] (+' item x))
-                ["+" false] (fn [item] (+' item item))
-                ["*" true] (fn [item] (*' item x))
-                ["*" false] (fn [item] (*' item item)))))
+                ["+" true] (fn [^long item] (+ item x))
+                ["+" false] (fn [^long item] (+ item item))
+                ["*" true] (fn [^long item] (* item x))
+                ["*" false] (fn [^long item] (* item item)))))
           (assoc &aim-fn
-            (let [[n] (u/split-parse test nil #"by " parse-long)
+            (let [[^long n] (u/split-parse test nil #"by " parse-long)
                   [t] (u/split-parse if-true nil #"monkey " parse-long)
                   [f] (u/split-parse if-false nil #"monkey " parse-long)]
-              #(if (= 0 (rem % n)) t f)))))))
+              #(if (= 0 (rem ^long % n)) t f)))))))
 
 
 (defn parse-input
@@ -109,6 +107,7 @@
   (compute-monkey-business input 20 #(quot ^long % 3)))
 
 
+;; TODO: somehow keep the numbers within a confined range, without changing divisibilities
 (defn part-2
   [input]
   (compute-monkey-business input 10000 identity))
