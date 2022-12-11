@@ -27,7 +27,8 @@
   `delay-ms` the delay in ms between each frame. Note that delays have a resolution of 10 ms.
   `loop-limit` is the number of times the gif should run. 0 means loop forever. Max is 65536."
   [out delay-ms loop-limit images]
-  (with-open [image-os   (MemoryCacheImageOutputStream. (BufferedOutputStream. (io/output-stream out) (* 8 1024 1024)))
+  (with-open [os         (io/output-stream out)
+              image-os   (MemoryCacheImageOutputStream. (BufferedOutputStream. os (* 8 1024 1024)))
               gif-writer (GifWriter. image-os (int delay-ms) (int loop-limit))]
     (doseq [image images]
       (when-not (instance? BufferedImage image)
