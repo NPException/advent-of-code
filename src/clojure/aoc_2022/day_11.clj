@@ -53,25 +53,25 @@
 
 (defn parse-input
   [input]
-  (let [monkeys  (->> (str/split input #"\n\n")
-                      (mapv parse-monkey))
-        magic (->> monkeys
-                      (map #(nth % &aim-fn))
-                      (map first)
-                      (apply *))]
+  (let [monkeys (->> (str/split input #"\n\n")
+                     (mapv parse-monkey))
+        magic   (->> monkeys
+                     (map #(nth % &aim-fn))
+                     (map first)
+                     (apply *))]
     [magic (mapv activate-monkey monkeys)]))
 
 
 (defn item-inspection
-  [cap-fn relief-fn inspect-fn aim-fn monkeys item]
-  (let [item'         (cap-fn (inspect-fn item))
-        item''        (relief-fn item')                     ;; relief / monkey gets bored
-        target-index  (aim-fn item'')
+  [relax-fn inspect-fn aim-fn monkeys item]
+  (let [item'         (-> (inspect-fn item)
+                          (relax-fn))
+        target-index  (aim-fn item')
         target-monkey (nth monkeys target-index)]
     (assoc! monkeys target-index
       (assoc! target-monkey
         &items
-        (conj! (nth target-monkey &items) item'')))))
+        (conj! (nth target-monkey &items) item')))))
 
 
 (defn update-inspections!
@@ -82,49 +82,50 @@
 
 
 (defn turn
-  [cap-fn relief-fn monkeys monkey-index]
+  [relax-fn monkeys monkey-index]
   (let [monkey  (nth monkeys monkey-index)
         items   (nth monkey &items)
         inspect (nth monkey &inspect-fn)
         aim     (nth monkey &aim-fn)]
     (reduce
-      #(item-inspection cap-fn relief-fn inspect aim %1 %2)
+      #(item-inspection relax-fn inspect aim %1 %2)
       (assoc! monkeys monkey-index
         (update-inspections! monkey (count items)))
       (persistent! items))))
 
 
 (defn round
-  [cap-fn relief-fn monkeys]
-  (reduce #(turn cap-fn relief-fn %1 %2)
+  [relax-fn monkeys]
+  (reduce #(turn relax-fn %1 %2)
     monkeys
     (range (count monkeys))))
 
 
 (defn compute-monkey-business
-  [input ^long rounds relief-fn]
-  (let [[^long magic monkeys] (parse-input input)
-        cap-fn (fn [^long x]
-                 (rem x magic))]
-    (->> (transient monkeys)
-         (iterate #(round cap-fn relief-fn %))
-         (take (inc rounds))
-         (last)
-         (persistent!)
-         (map #(nth % &inspections))
-         (sort #(compare %2 %1))
-         (take 2)
-         (apply *))))
+  [monkeys ^long rounds relax-fn]
+  (->> (transient monkeys)
+       (iterate #(round relax-fn %))
+       (take (inc rounds))
+       (last)
+       (persistent!)
+       (map #(nth % &inspections))
+       (sort #(compare %2 %1))
+       (take 2)
+       (apply *)))
 
 
 (defn part-1
   [input]
-  (compute-monkey-business input 20 #(quot ^long % 3)))
+  (-> (parse-input input)
+      (second)
+      (compute-monkey-business 20 #(quot ^long % 3))))
 
 
 (defn part-2
   [input]
-  (compute-monkey-business input 10000 identity))
+  (let [[^long magic monkeys] (parse-input input)]
+    (compute-monkey-business monkeys 10000 (fn [^long x]
+                                             (rem x magic)))))
 
 
 (comment
