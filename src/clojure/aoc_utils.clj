@@ -482,7 +482,8 @@
 (defn A*-search
   "A* implementation translated from https://en.wikipedia.org/wiki/A*_search_algorithm#Pseudocode
   nil elements are not permitted. (might implement later)
-  Paramters:
+  Returns the path from start to goal.
+  Parameters:
   `start` - The state from which the search should begin.
   `goal?` - Predicate function which takes a node and must return true if the given value represents the desired final state.
   `neighbours-fn` - Given a state, has to return a sequence of states that the search can continue traversing.
