@@ -424,6 +424,26 @@
        (mapv vec)))
 
 
+(defn grid-elements
+  "Returns a lazy sequence of all elements and their coordinates in a grid. Each row is retrieved eagerly.
+  Returned are tuples of [x y element]"
+  ([grid]
+   (let [height (count grid)
+         width  (count (first grid))]
+     (grid-elements grid 0 width 0 height)))
+  ([grid from-x to-x from-y to-y]
+   (when (< ^long from-y ^long to-y)
+     (lazy-cat
+       (let [^long end-x to-x
+             ^long y from-y]
+         (loop [^long x from-x
+                row (transient [])]
+           (if (= x end-x)
+             (persistent! row)
+             (recur (inc x) (conj! row [x y (nth-in grid [y x])])))))
+       (grid-elements grid from-x to-x (inc ^long from-y) to-y)))))
+
+
 (defmacro fn->
   "Threads the expr through the forms.
   Inserts x as the first item (fn position) in the first form, making a list of it if it is not a list already.
