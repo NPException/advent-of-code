@@ -21,7 +21,8 @@
         width (count grid)
         [max :as goal] (goal-fn width)
         path  (u/A*-search
-                [0 0] #(= % goal)
+                [[0 0]]
+                #(= % goal)
                 (fn [[x y]]
                   (cond-> '()
                     (> x 0) (conj [(dec x) y])

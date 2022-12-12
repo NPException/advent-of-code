@@ -149,7 +149,7 @@
                      [boss-hp boss-base-damage]
                      [0 0 0]]]
     (-> (u/A*-search
-          start-state
+          [start-state]
           win?
           (fn [state]
             (filterv some?

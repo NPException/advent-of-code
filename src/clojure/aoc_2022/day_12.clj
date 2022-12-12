@@ -50,10 +50,10 @@
 
 
 (defn solve
-  [start steps-fn goal-fn]
-  (->> (u/A*-search start
+  [grid start goal-fn]
+  (->> (u/A*-search [start]
          goal-fn
-         steps-fn
+         #(next-possible-steps grid %)
          (constantly 0)
          (constantly 1))
        (count)
@@ -63,9 +63,7 @@
 (defn part-1
   [input]
   (let [[grid start end] (parse-input input)]
-    (solve end
-      (fn [pos]
-        (next-possible-steps grid pos))
+    (solve grid end
       #(= % start))))
 
 
@@ -73,9 +71,7 @@
   [input]
   (let [[grid _ end] (parse-input input)
         target-height (int \a)]
-    (solve end
-      (fn [pos]
-        (next-possible-steps grid pos))
+    (solve grid end
       (fn [[x y]]
         (= target-height (at grid x y))))))
 

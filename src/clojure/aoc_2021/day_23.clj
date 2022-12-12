@@ -113,7 +113,7 @@
 
 (defn find-path
   [spots [from to]]
-  (let [path  (vec (u/A*-search from
+  (let [path  (vec (u/A*-search [from]
                      #(= % to)
                      #(keys (u/nth-in spots [% 1]))
                      (constantly 0)
@@ -244,7 +244,7 @@
                        (zipmap [\A \B \C \D]))
         paths     (generate-paths spots)
         start (start-state input spots lines-transform)]
-    (->> (u/A*-search start
+    (->> (u/A*-search [start]
            #(finished? spots rooms %)
            #(advance-state positions hallways hallway? paths goals %)
            #(estimate-finish-cost positions paths goals %)

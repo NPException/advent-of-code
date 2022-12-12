@@ -490,7 +490,7 @@
   `heuristic-fn` - Given a state, should return a cost estimate of going from the state to the goal.
                    (Bad estimates can make the search really slow. When unsure, try `(constantly 0)` as fallback.
   `cost-fn` - Given the current state and a neighbor state, must return the cost of moving to the neighbor state."
-  [start goal? neighbours-fn heuristic-fn cost-fn]
+  [starts goal? neighbours-fn heuristic-fn cost-fn]
   (let [came-from  (HashMap.)                               ;; For node n, (came-from n) is the node immediately preceding it on the cheapest path from start to n currently known.
         g-score    (HashMap.)                               ;; <double> For node n, (g-score n) is the cost of the cheapest path from start to n currently known. (default: infinity)
         f-score    (HashMap.)                               ;; <double> For node n, (f-score n) is (g-score n) + (heuristic-fn n). (f-score n) represents our current best guess as to how short a path from start to finish can be if it goes through n.
@@ -499,10 +499,11 @@
                      (Comparator/comparingDouble
                        (reify ToDoubleFunction
                          (applyAsDouble [_ e] (.doubleValue ^Number (.getOrDefault f-score e Double/POSITIVE_INFINITY))))))]
-    (.put g-score start 0.0)
-    (.put f-score start (.doubleValue ^Number (heuristic-fn start)))
-    (.add open-set start)
-    (.add open-queue start)
+    (doseq [start starts]
+      (.put g-score start 0.0)
+      (.put f-score start (.doubleValue ^Number (heuristic-fn start)))
+      (.add open-set start)
+      (.add open-queue start))
     (loop []
       (when-some [current (.poll open-queue)]
         (.remove open-set current)
