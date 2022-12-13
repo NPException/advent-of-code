@@ -1,7 +1,5 @@
 (ns aoc-2022.day-13
   (:require [aoc-utils :as u]
-            [clojure.edn :as edn]
-            [clojure.string :as str]
             [criterium.core :as crit]))
 
 ; (set! *warn-on-reflection* true)
@@ -9,16 +7,9 @@
 
 ;; --- Day 13: Distress Signal ---
 
-(def task-input (u/slurp-resource "inputs/aoc_2022/day-13.txt"))
+(def task-input (u/read-as-vector (u/slurp-resource "inputs/aoc_2022/day-13.txt")))
 
-(def test-input "[1,1,3,1,1]\n[1,1,5,1,1]\n\n[[1],[2,3,4]]\n[[1],4]\n\n[9]\n[[8,7,6]]\n\n[[4,4],4,4]\n[[4,4],4,4,4]\n\n[7,7,7,7]\n[7,7,7]\n\n[]\n[3]\n\n[[[]]]\n[[]]\n\n[1,[2,[3,[4,[5,6,7]]]],8,9]\n[1,[2,[3,[4,[5,6,0]]]],8,9]")
-
-
-(defn parse-input
-  [input]
-  (->> (str/split input #"\n")
-       (remove str/blank?)
-       (mapv edn/read-string)))
+(def test-input (u/read-as-vector "[1,1,3,1,1]\n[1,1,5,1,1]\n\n[[1],[2,3,4]]\n[[1],4]\n\n[9]\n[[8,7,6]]\n\n[[4,4],4,4]\n[[4,4],4,4,4]\n\n[7,7,7,7]\n[7,7,7]\n\n[]\n[3]\n\n[[[]]]\n[[]]\n\n[1,[2,[3,[4,[5,6,7]]]],8,9]\n[1,[2,[3,[4,[5,6,0]]]],8,9]"))
 
 
 (defn compare-order
@@ -33,8 +24,7 @@
 
 (defn part-1
   [input]
-  (->> (parse-input input)
-       (partition 2)
+  (->> (partition 2 input)
        (map-indexed (fn [i [left right]]
                       (when (== -1 (compare-order left right))
                         (inc i))))
@@ -46,8 +36,7 @@
   [input]
   (let [dividers #{[[2]]
                    [[6]]}]
-    (->> (parse-input input)
-         (concat dividers)
+    (->> (into input dividers)
          (sort compare-order)
          (map-indexed #(when (dividers %2) (inc %1)))
          (filter some?)
