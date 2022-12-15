@@ -581,7 +581,7 @@
      ([a b c & more] (or (apply pred1 a b c more)
                          (apply pred2 a b c more)))))
   ([pred1 pred2 & preds]
-   (and-fn pred1 (apply and-fn pred2 preds))))
+   (or-fn pred1 (apply or-fn pred2 preds))))
 
 (defn not-fn
   "Takes a predicate and inverts it. (equivalent to 'clojure.core/complement', with additional 3-arity body)"
