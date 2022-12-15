@@ -35,7 +35,8 @@
 ;; _TH__    _T___    _____
 ;; _____    _____    _____
 
-(defn adjust-bad
+(comment
+  (defn adjust-bad
     [prev-parent
      [px py :as _new-parent]
      [kx ky :as knot]]
@@ -43,10 +44,8 @@
              (<= -1 (- ky py) 1))
       knot
       prev-parent))
-
-(defn unit
-  ^long [^long x]
-  (if (< x -1) -1 (if (> x 1) 1 x)))
+  ;
+  )
 
 
 (defn adjust
@@ -56,8 +55,8 @@
   (if (and (<= -1 (- x px) 1)
            (<= -1 (- y py) 1))
     knot
-    [(+ x (unit (- px x)))
-     (+ y (unit (- py y)))]))
+    [(+ x (Long/signum (- px x)))
+     (+ y (Long/signum (- py y)))]))
 
 
 (defn steps
