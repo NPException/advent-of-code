@@ -14,13 +14,11 @@
         w (count (first lines))]
     (->> lines
          ;; check down
-         (map-indexed vector)
-         (filter #(= 0 (mod (first %) slope-down)))
+         (keep-indexed #(when (= 0 (mod %1 slope-down)) %2))
          ;; check right
-         (map-indexed (fn [i [_ line]]
-                        [(* slope-right i) line]))
-         (filter (fn [[pos line]]
-                   (= \# (nth line (mod pos w)))))
+         (keep-indexed (fn [i line]
+                         (when (= \# (nth line (mod (* slope-right i) w)))
+                           line)))
          count)))
 
 
@@ -38,12 +36,12 @@
 
 (comment
   ;; Part 1
-  (count-trees task-input 3 1)
+  (count-trees task-input 3 1)                              ; => 203
 
   ;; Part 2
   (* (count-trees task-input 1 1)
      (count-trees task-input 3 1)
      (count-trees task-input 5 1)
      (count-trees task-input 7 1)
-     (count-trees task-input 1 2))
+     (count-trees task-input 1 2))                          ; => 3316272960
   )

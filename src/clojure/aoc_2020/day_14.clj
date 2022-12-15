@@ -14,9 +14,8 @@
 
 (defn find-floaty-bits
   [mask-string]
-  (->> (map-indexed vector mask-string)
-       (filter #(= \X (second %)))
-       (mapv first)))
+  (vec (keep-indexed #(when (= \X %2) %1)
+         mask-string)))
 
 (defn parse-command
   [[op arg-1 arg-2]]

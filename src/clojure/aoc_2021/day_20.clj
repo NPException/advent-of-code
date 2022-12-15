@@ -20,10 +20,9 @@
       :active (->> grid-lines
                    (map-indexed
                      (fn [y line]
-                       (->> line (map-indexed
+                       (->> line (keep-indexed
                                    (fn [x c] (when (= c \#) [x y]))))))
                    (apply concat)
-                   (filter some?)
                    (into #{}))}]))
 
 (defn activate?

@@ -11,11 +11,11 @@
 
 (defn parse-grid-line
   [additional-coordinates y line]
-  (->> line
-       (map-indexed vector)
-       (filter #(= \# (second %)))
-       (map (fn [[x _]]
-              (apply vector x y additional-coordinates)))))
+  (keep-indexed
+    (fn [x e]
+      (when (= \# e)
+        (apply vector x y additional-coordinates)))
+    line))
 
 (defn parse-grid
   "returns a set of coordinates of active cubes"

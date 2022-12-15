@@ -15,8 +15,8 @@
 
 (defn coordinate-of
   [grid c]
-  (->> (map-indexed vector grid)
-       (keep (fn [[y row]]
+  (->> grid
+       (keep-indexed (fn [y row]
                (when-let [x (str/index-of row c)]
                  [x y])))
        (first)))

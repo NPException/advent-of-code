@@ -45,8 +45,7 @@
   [input]
   (->> (parse-input input)
        second
-       (map-indexed vector)
-       (remove (comp nil? second))
+       (keep-indexed #(when %2 [%1 %2]))
        (reduce advance-matching-time [0 1])
        first))
 

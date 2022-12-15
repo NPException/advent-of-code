@@ -84,10 +84,10 @@
   [tile-set]
   (let [size (->> tile-set first :grid count)
         end-index (dec size)]
-    [(vec (map-indexed (fn [i _] [i 0]) (range size)))      ;; TOP
-     (vec (map-indexed (fn [i _] [end-index i]) (range size))) ;; RIGHT
-     (vec (map-indexed (fn [i _] [i end-index]) (range size))) ;; BOTTOM
-     (vec (map-indexed (fn [i _] [0 i]) (range size)))]))   ;; LEFT
+    [(mapv (fn [i] [i 0]) (range size))               ;; TOP
+     (mapv (fn [i] [end-index i]) (range size))       ;; RIGHT
+     (mapv (fn [i] [i end-index]) (range size))       ;; BOTTOM
+     (mapv (fn [i] [0 i]) (range size))]))            ;; LEFT
 
 
 (defn find-corner-tiles

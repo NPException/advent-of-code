@@ -16,7 +16,7 @@
   [left right]
   (if (and (int? left) (int? right))
     (Long/compare left right)
-    (let [left (if (vector? left) left [left])
+    (let [left  (if (vector? left) left [left])
           right (if (vector? right) right [right])]
       (or (u/first-match #(not= 0 %) (mapv compare-order left right))
           (Long/compare (count left) (count right))))))
@@ -25,10 +25,9 @@
 (defn part-1
   [input]
   (->> (partition 2 input)
-       (map-indexed (fn [i [left right]]
-                      (when (== -1 (compare-order left right))
-                        (inc i))))
-       (filter some?)
+       (keep-indexed (fn [i [left right]]
+                       (when (== -1 (compare-order left right))
+                         (inc i))))
        (apply +)))
 
 
@@ -38,8 +37,7 @@
                    [[6]]}]
     (->> (into input dividers)
          (sort compare-order)
-         (map-indexed #(when (dividers %2) (inc %1)))
-         (filter some?)
+         (keep-indexed #(when (dividers %2) (inc %1)))
          (apply *))))
 
 

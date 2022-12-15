@@ -120,10 +120,9 @@
         matches-some-rule? (apply u/or-fn (vals rules))
         valid-tickets (filter #(every? matches-some-rule? %) nearby-tickets)
         fields (determine-field-order rules valid-tickets)]
-    (->> (map-indexed vector fields)
-         (filter (comp #(string/starts-with? % "departure") second))
-         (map first)
-         (map my-ticket)
+    (->> fields
+         (keep-indexed #(when (string/starts-with? %2 "departure")
+                          (my-ticket %1)))
          (apply *))))
 
 
