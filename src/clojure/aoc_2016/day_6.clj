@@ -16,7 +16,7 @@
 (defn decode
   [input sort-key]
   (->> (str/split-lines input)
-       (u/rows->columns)
+       (u/transpose)
        (map (u/rcomp frequencies #(sort-by sort-key %) first key))
        (apply str)))
 

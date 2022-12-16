@@ -27,7 +27,7 @@
 
 (defn part-2
   []
-  (->> (u/rows->columns triangles)
+  (->> (u/transpose triangles)
        (apply concat)
        (partition 3)
        (u/count-matching valid-triangle?)))

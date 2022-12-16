@@ -396,11 +396,11 @@
       coll)))
 
 
-(defn rows->columns
-  "Takes a sequence of same-sized rows (a grid) and returns a vector of the columns instead. (eager)"
-  [rows]
-  (->> (apply interleave rows)
-       (partition (count rows))
+(defn transpose
+  "Takes a 2D grid (sequence of same-sized rows) flips it over its diagonal; i.e. it switches rows and columns. (eager)"
+  [grid]
+  (->> (apply interleave grid)
+       (partition (count grid))
        (mapv vec)))
 
 

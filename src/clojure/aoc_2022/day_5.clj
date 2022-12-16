@@ -21,7 +21,7 @@
                (->> (rest line)
                     (take-nth 4)
                     (mapv #(if-not (= \space %) %)))))
-       (u/rows->columns)
+       (u/transpose)
        (mapv #(vec (rseq (filterv some? %))))))
 
 
