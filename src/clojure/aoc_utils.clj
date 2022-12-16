@@ -399,9 +399,7 @@
 (defn transpose
   "Takes a 2D grid (sequence of same-sized rows) flips it over its diagonal; i.e. it switches rows and columns. (eager)"
   [grid]
-  (->> (apply interleave grid)
-       (partition (count grid))
-       (mapv vec)))
+  (apply mapv vector grid))
 
 
 (defn grid-elements
