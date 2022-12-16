@@ -21,7 +21,7 @@
        (u/vpartition 4)))
 
 
-(defn prepare-beacon
+(defn prepare-beacon-1
   "takes sensor x/y, and beacon offset x/y, and returns a vector of the sensor range and a
   predicate that returns true if a given coordinate is within the sensor range, but cannot contain a beacon."
   [^long sx ^long sy ^long bx ^long by]
@@ -37,24 +37,59 @@
 
 (defn part-1
   [input y]
-  (let [[min-x max-x preds] (->> (parse-input input)
-                                 (reduce
-                                   (fn [[min-x max-x preds] [sx sy bx by]]
-                                     (let [[distance pred] (prepare-beacon sx sy bx by)]
-                                       [(min min-x (- sx distance))
-                                        (max max-x (+ sx distance))
-                                        (conj preds pred)]))
-                                   [Long/MAX_VALUE
-                                    Long/MIN_VALUE
-                                    []]))
+  (let [[^long min-x, ^long max-x, preds] (->> (parse-input input)
+                                               (reduce
+                                                 (fn [[^long min-x, ^long max-x, preds]
+                                                      [^long sx, ^long sy, bx by]]
+                                                   (let [[^long distance pred] (prepare-beacon-1 sx sy bx by)]
+                                                     [(min min-x (- sx distance))
+                                                      (max max-x (+ sx distance))
+                                                      (conj preds pred)]))
+                                                 [Long/MAX_VALUE
+                                                  Long/MIN_VALUE
+                                                  []]))
         mega-pred (apply u/or-fn preds)]
     (->> (range min-x (inc max-x))
          (u/count-matching (fn [x] (mega-pred x y))))))
 
 
+(defn prepare-beacon-2
+  "takes sensor x/y, and beacon offset x/y, and returns a function that for any given y coordinate
+  will return a region of x that's within the sensor's reach."
+  [^long size [^long sx ^long sy ^long bx ^long by]]
+  (let [range (+ (abs (- bx sx))
+                 (abs (- by sy)))]
+    (fn [^long y]
+      (let [d (- range (abs (- y sy)))]
+        (when (>= d 0)
+          [(max 0 (- sx d)) (min size (+ sx d))])))))
+
+
+(defn find-beacon
+  [range-fns y]
+  (let [result (reduce
+                 (fn [[_ ^long b1 :as current] [^long a2 ^long b2 :as next]]
+                   (cond
+                     ;; next region ends within the current
+                     (<= b2 b1) current
+                     ;; next region overlapping or adjacent
+                     (<= a2 (inc b1)) next
+                     ;; found the coordinate
+                     :else (reduced (inc b1))))
+                 (sort (u/keepv #(% y) range-fns)))]
+    (when (int? result)
+      [result y])))
+
+
 (defn part-2
-  [input]
-  )
+  [input ^long size]
+  (let [range-fns (->> (parse-input input)
+                       (mapv #(prepare-beacon-2 size %)))
+        [x y] (->> (range (inc size))
+                   (keep #(find-beacon range-fns %))
+                   (first))]
+    (-> (* x 4000000)
+        (+ y))))
 
 
 (comment
@@ -64,8 +99,8 @@
   (crit/quick-bench (part-1 task-input))
 
   ;; Part 2
-  (part-2 test-input)                                       ; => 56000011
-  (part-2 task-input)                                       ; =>
+  (part-2 test-input 20)                                    ; => 56000011
+  (part-2 task-input 4000000)                               ; => 13639962836448
   (crit/quick-bench (part-2 task-input))
 
   )

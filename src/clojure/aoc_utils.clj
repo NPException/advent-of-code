@@ -416,6 +416,18 @@
          coll)))))
 
 
+(defn keepv
+  "Eager version of `clojure.core/keep`"
+  [f coll]
+  (persistent!
+    (reduce
+      (fn [acc e]
+        (let [r (f e)]
+          (if (nil? r) acc (conj! acc r))))
+      (transient [])
+      coll)))
+
+
 (defn rows->columns
   "Takes a sequence of same-sized rows (a grid) and returns a vector of the columns instead. (eager)"
   [rows]
