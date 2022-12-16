@@ -1,7 +1,6 @@
 (ns aoc-utils
   (:require [clojure.edn :as edn]
             [clojure.java.io :as io]
-            [clojure.main :as main]
             [clojure.math :as math]
             [clojure.string :as str]
             [clojure.walk :as walk]
@@ -56,37 +55,6 @@
                        (nil? (first %)))
             (map list parse-fns result-syms))
         (~(last parse-fns) ~remaining-sym)])))
-
-
-(defn inspect
-  [x]
-  (println x)
-  x)
-
-;; a bit of repl magic from "The Joy of Clojure"
-(defn contextual-eval [ctx expr]
-  (eval
-    `(let [~@(mapcat (fn [[k v]] [k `'~v]) ctx)]
-       ~expr)))
-
-(defmacro local-context []
-  (let [symbols (keys &env)]
-    (zipmap
-      (map (fn [sym] `(quote ~sym)) symbols)
-      symbols)))
-
-(defn readr [prompt exit-code]
-  (let [input (main/repl-read prompt exit-code)]
-    (if (= input ::exit)
-      exit-code
-      input)))
-
-;;make a break point
-(defmacro break []
-  `(main/repl
-     :prompt #(print "debug=> ")
-     :read readr
-     :eval (partial contextual-eval (local-context))))
 
 
 (defn parse-binary
