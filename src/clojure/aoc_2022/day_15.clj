@@ -1,7 +1,8 @@
 (ns aoc-2022.day-15
   (:require [aoc-utils :as u]
             [clojure.string :as str]
-            [criterium.core :as crit]))
+            [criterium.core :as crit]
+            [debug-utils :as d]))
 
 (set! *warn-on-reflection* true)
 (set! *unchecked-math* :warn-on-boxed)
@@ -83,10 +84,11 @@
 
 (defn part-2
   [input ^long size]
-  (let [range-fns (->> (parse-input input)
-                       (mapv #(prepare-beacon-2 size %)))
+  (let [update-progress (d/spawn-progress-bar "2022 Day 15 - Part 2" 0 size)
+        range-fns       (->> (parse-input input)
+                             (mapv #(prepare-beacon-2 size %)))
         [x y] (->> (range (inc size))
-                   (keep #(find-beacon range-fns %))
+                   (keep #(find-beacon range-fns (update-progress %)))
                    (first))]
     (-> (* x 4000000)
         (+ y))))
