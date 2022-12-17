@@ -22,13 +22,32 @@
                 #" has flow rate=" parse-long
                 #"; tunnels? leads? to valves? " #(mapv keyword (u/read-as-vector %)))))
        (map (fn [[valve rate adjacent-nodes]]
-              [valve [rate adjacent-nodes]]))
-       (sort-by first)
-       (apply concat)
-       (apply array-map)))
+              [valve [rate (set adjacent-nodes)]]))
+       (into {})))
 
-; TODO: Try to recalculate the `adjacent-nodes`, so that it contains every node of the map, and the number of minutes it takes to get there.
-;       Then use that as the base for A*
+
+(defn path-length
+  [nodes from to]
+  (dec (count (u/A*-search [from]
+                #(= % to)
+                #(second (nodes %))
+                (fn [_] 0)
+                (fn [_ _] 1)))))
+
+
+(defn prepare-nodes
+  [nodes]
+  (let [nodes-with-flow (->> nodes
+                             (filter (fn [[_ [flow]]]
+                                       (> flow 0)))
+                             (map first)
+                             (set))]
+    (reduce
+      (fn [acc [node [rate _]]]
+        (assoc acc node [rate (->> (disj nodes-with-flow node)
+                                   (map #(vector % (path-length nodes node %))))]))
+      {}
+      nodes)))
 
 
 (defn advance-state
@@ -45,6 +64,10 @@
       (not (or (open current) (zero? rate)))
       (conj (-> (update state :total-rate u/+l rate)
                 (assoc :open (conj open current)))))))
+
+
+; TODO: - use `prepare-nodes` to know the only useful paths around
+;       - adjust `advance-state` to use the new data and skip multiple minutes instead of single stepping
 
 
 (defn part-1
