@@ -35,65 +35,80 @@
                 (fn [_ _] 1)))))
 
 
-(defn prepare-nodes
-  [nodes]
-  (let [nodes-with-flow (->> nodes
-                             (filter (fn [[_ [flow]]]
-                                       (> flow 0)))
-                             (map first)
-                             (set))]
+(defn build-path-lengths
+  "Returns a map of nodes to [flowrate other-nodes], where `other-nodes`
+  is a vector of the node keyword, and the length of the path leading to it.
+  {:CC [2 ([:HH 5] [:BB 1] [:EE 2] [:DD 1] [:JJ 4])]"
+  [valves]
+  (let [valves-with-flow (->> valves
+                              (filter (fn [[_ [flow]]]
+                                        (> flow 0)))
+                              (map key)
+                              (set))]
     (reduce
-      (fn [acc [node [rate _]]]
-        (assoc acc node [rate (->> (disj nodes-with-flow node)
-                                   (map #(vector % (path-length nodes node %))))]))
+      (fn [acc valve]
+        (assoc acc valve
+          (->> (disj valves-with-flow valve)
+               (map #(vector % (path-length valves valve %)))
+               (into {}))))
       {}
-      nodes)))
+      (keys valves))))
+
+(defn build-flow-rates
+  [valves]
+  (->> valves
+       (keep (fn [[valve [flow]]]
+               (when (> flow 0)
+                 [valve flow])))
+       (into {})))
 
 
-(defn advance-state
-  [state]
-  (let [{:keys [current nodes open] :as state}
-        (-> state
-            (update :released u/+l (:total-rate state))
-            (update :time-left dec))
-        [^long rate adjacent-nodes] (nodes current)]
-    (cond->
-      ; construct vector of all neighbour states based on where we can move
-      (mapv #(assoc state :current %) adjacent-nodes)
-      ; if current valve can be opened, add it to the vector of neighbour states
-      (not (or (open current) (zero? rate)))
-      (conj (-> (update state :total-rate u/+l rate)
-                (assoc :open (conj open current)))))))
+(declare find-next-valve)
 
+(defn weight
+  "Determines how much effect on released pressure the given node had if we moved to and opened it."
+  [path-lengths rates valves-left valve time-left distance]
+  ; decrement to include the minute necessary to open the valve
+  (let [new-time-left (- (dec time-left) distance)
+        valve-rate    (* new-time-left (rates valve))]
+    (cond
+      (<= valve-rate 0) 0
+      (empty? valves-left) valve-rate
+      :else (+ valve-rate
+               (first (find-next-valve path-lengths rates valve valves-left new-time-left))))))
 
-; TODO: - use `prepare-nodes` to know the only useful paths around
-;       - adjust `advance-state` to use the new data and skip multiple minutes instead of single stepping
+(defn find-next-valve
+  [path-lengths rates valve valves-left time-left]
+  (->> valves-left
+       (mapv (fn [next-valve]
+               (let [distance (-> path-lengths valve next-valve)]
+                 [(weight
+                    path-lengths rates (disj valves-left next-valve)
+                    next-valve
+                    time-left
+                    distance)
+                  next-valve
+                  distance])))
+       (sort-by first #(compare %2 %1))
+       (first)))
 
 
 (defn part-1
   [input]
-  (let [nodes       (parse-input input)
-        max-rate    (->> (map first (vals nodes))
-                         (apply +))
-        max-release (* 30 ^long max-rate)
-        state       {:nodes      nodes
-                     :open       #{}
-                     :current    :AA
-                     :time-left  30
-                     :released   0
-                     :total-rate 0}]
-    (:released
-      (last
-        (u/A*-search [state]
-          ; goal
-          #(zero? ^long (:time-left %))
-          ; neighbours
-          advance-state
-          ; heuristic
-          (fn [_] 0.0)
-          ; cost
-          (fn [current next]
-            (- max-release ^long (:released next))))))))
+  (let [valve-map    (parse-input input)
+        path-lengths (build-path-lengths valve-map)
+        rates        (build-flow-rates valve-map)]
+    (loop [valves-left (set (keys rates))
+           time-left 30
+           valve :AA
+           released 0
+           flow-rate 0]
+      (if (zero? time-left)
+        released
+        (let [[_ next-valve distance] (find-next-valve path-lengths rates valve valves-left time-left)]
+          ; TODO: - if distance+1 larger than time left -> return `released + remaining_time*flow-rate`
+          ;       - else recur with `time_left - ++distance` and other updated values
+          )))))
 
 
 (defn part-2
@@ -103,7 +118,7 @@
 
 (comment
   ;; Part 1
-  (part-1 test-input)                                       ; => 1651 (15.2 seconds)
+  (part-1 test-input)                                       ; => 1651
   (part-1 task-input)                                       ; =>
   (crit/quick-bench (part-1 task-input))
 
