@@ -118,6 +118,7 @@
               (+ flow-rate ^long (rates next-valve)))))))))
 
 
+; TODO: If I don't find a solution myself, try translating this: https://www.reddit.com/r/adventofcode/comments/zn6k1l/2022_day_16_solutions/j0nzcnu/
 (defn part-2
   [input]
   )
@@ -130,7 +131,7 @@
   (crit/quick-bench (part-1 task-input))
 
   ;; Part 2
-  (part-2 test-input)                                       ; =>
+  (part-2 test-input)                                       ; => 1707
   (part-2 task-input)                                       ; =>
   (crit/quick-bench (part-2 task-input))
 
