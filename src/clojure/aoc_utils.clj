@@ -5,7 +5,7 @@
             [clojure.string :as str]
             [clojure.walk :as walk]
             [web-utils :as web])
-  (:import (clojure.lang IPersistentVector)
+  (:import (clojure.lang IPersistentVector PersistentQueue)
            (de.npe.utils LongBox)
            (java.security MessageDigest)
            (java.time LocalDateTime)
@@ -474,6 +474,31 @@
   "Linear interpolation between two values"
   [^double a ^double b ^double amount]
   (+ a (* amount (- b a))))
+
+
+(defn ^:private graph-search
+  [coll graph rf children-fn ctx start]
+  (loop [coll (conj coll start)
+         visited #{}
+         ctx ctx]
+    (cond
+      (empty? coll) ctx
+      (visited (peek coll)) (recur (pop coll) visited ctx)
+      :else (let [curr (peek coll)
+                  node (graph curr)
+                  coll (into (pop coll) (children-fn node))
+                  visited (conj visited curr)
+                  ctx (rf ctx curr node)]
+              (recur coll visited ctx)))))
+
+
+(defn breadth-first-search
+  [graph rf children-fn ctx start]
+  (graph-search PersistentQueue/EMPTY graph rf children-fn ctx start))
+
+(defn depth-first-search
+  [graph rf children-fn ctx start]
+  (graph-search [] graph rf children-fn ctx start))
 
 
 (defn A*-search
