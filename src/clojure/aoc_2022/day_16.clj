@@ -3,8 +3,7 @@
             [clojure.string :as str]
             [criterium.core :as crit]))
 
-(set! *warn-on-reflection* true)
-(set! *unchecked-math* :warn-on-boxed)
+; (set! *unchecked-math* :warn-on-boxed)
 
 ;; --- Day 16: Proboscidea Volcanium ---
 
@@ -54,6 +53,7 @@
       {}
       (keys valves))))
 
+
 (defn build-flow-rates
   [valves]
   (->> valves
@@ -67,9 +67,9 @@
 
 (defn weight
   "Determines how much effect on released pressure the given node had if we moved to and opened it."
-  [path-lengths rates valves-left valve time-left distance]
+  [path-lengths rates valves-left valve time-left time-taken]
   ; decrement to include the minute necessary to open the valve
-  (let [new-time-left (- (dec time-left) distance)
+  (let [new-time-left (- time-left time-taken)
         valve-rate    (* new-time-left (rates valve))]
     (cond
       (<= valve-rate 0) 0
@@ -77,18 +77,20 @@
       :else (+ valve-rate
                (first (find-next-valve path-lengths rates valve valves-left new-time-left))))))
 
+
 (defn find-next-valve
   [path-lengths rates valve valves-left time-left]
   (->> valves-left
        (mapv (fn [next-valve]
-               (let [distance (-> path-lengths valve next-valve)]
+               ; time taken to walk to and open the valve
+               (let [time-taken (-> path-lengths valve next-valve inc)]
                  [(weight
                     path-lengths rates (disj valves-left next-valve)
                     next-valve
                     time-left
-                    distance)
+                    time-taken)
                   next-valve
-                  distance])))
+                  time-taken])))
        (sort-by first #(compare %2 %1))
        (first)))
 
@@ -105,10 +107,15 @@
            flow-rate 0]
       (if (zero? time-left)
         released
-        (let [[_ next-valve distance] (find-next-valve path-lengths rates valve valves-left time-left)]
-          ; TODO: - if distance+1 larger than time left -> return `released + remaining_time*flow-rate`
-          ;       - else recur with `time_left - ++distance` and other updated values
-          )))))
+        (let [[_ next-valve ^long time-taken] (find-next-valve path-lengths rates valve valves-left time-left)]
+          (if (or (nil? next-valve) (> time-taken time-left))
+            (+ released (* time-left flow-rate))
+            (recur
+              (disj valves-left next-valve)
+              (- time-left time-taken)
+              next-valve
+              (+ released (* time-taken flow-rate))
+              (+ flow-rate ^long (rates next-valve)))))))))
 
 
 (defn part-2
@@ -119,7 +126,7 @@
 (comment
   ;; Part 1
   (part-1 test-input)                                       ; => 1651
-  (part-1 task-input)                                       ; =>
+  (part-1 task-input)                                       ; => 1701
   (crit/quick-bench (part-1 task-input))
 
   ;; Part 2
