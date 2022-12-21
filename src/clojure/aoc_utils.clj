@@ -40,8 +40,10 @@
   (let [parse-fns     (take-nth 2 parse-fns-and-split-regexes)
         split-keys    (take-nth 2 (drop 1 parse-fns-and-split-regexes))
         split-syms    (repeatedly (count split-keys) #(gensym "split-on_"))
-        result-syms   (repeatedly (count split-keys) #(gensym "result_"))
-        remaining-sym (with-meta (gensym "remaining_") {:tag "java.lang.String"})]
+        remaining-sym (with-meta (gensym "remaining_") {:tag "java.lang.String"})
+        result-syms   (concat
+                        (repeatedly (count split-keys) #(gensym "result_"))
+                        [remaining-sym])]
     `(let [~@(interleave split-syms split-keys)
            ~remaining-sym ~input
            ~@(concat (mapcat
@@ -52,8 +54,7 @@
                        result-syms))]
        [~@(remove #(or (keyword? (first %))
                        (nil? (first %)))
-            (map list parse-fns result-syms))
-        (~(last parse-fns) ~remaining-sym)])))
+            (map list parse-fns result-syms))])))
 
 
 (defn parse-binary
