@@ -101,10 +101,10 @@
         path-lengths (build-path-lengths valve-map)
         rates        (build-flow-rates valve-map)]
     (loop [valves-left (set (keys rates))
-           time-left 30
-           valve :AA
-           released 0
-           flow-rate 0]
+           time-left   30
+           valve       :AA
+           released    0
+           flow-rate   0]
       (if (zero? time-left)
         released
         (let [[_ next-valve ^long time-taken] (find-next-valve path-lengths rates valve valves-left time-left)]
@@ -118,7 +118,7 @@
               (+ flow-rate ^long (rates next-valve)))))))))
 
 
-; TODO: If I don't find a solution myself, try translating this: https://www.reddit.com/r/adventofcode/comments/zn6k1l/2022_day_16_solutions/j0nzcnu/
+; TODO: Check how this works: https://github.com/tabidots/aoc2022_clj/blob/main/src/tabidots/day16.clj
 (defn part-2
   [input]
   )
