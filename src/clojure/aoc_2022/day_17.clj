@@ -103,10 +103,7 @@
 
 (defn highest-point
   [grid]
-  (loop [y (dec (count grid))]
-    (if (some #(not= empty-sprite %) (nth grid y))
-      y
-      (recur (dec y)))))
+  (dec (count grid)))
 
 
 (defn print-grid
@@ -129,34 +126,73 @@
   (if (= jet \>) (inc x) (dec x)))
 
 
-(defn part-1
-  [input]
+(defn simulate
+  [input rocks-to-simulate]
   (loop [[jet & jets] (cycle input)
          [[_ free? place] :as rocks] rocks
          rock-count 0
          grid       start-grid
+         peaks$     (transient [0])
          [x y] (rock-spawn-position grid)]
-    (if (= rock-count 2022)
-      (highest-point grid)
+    (if (= rock-count rocks-to-simulate)
+      [grid (persistent! peaks$)]
       (do #_(print-grid (place grid x y \@))
-          (let [nx (push jet x)
-                nx (if (free? grid nx y) nx x)]
-            #_(println jet)
-            #_(print-grid (place grid nx y \@))
-            (if (free? grid nx (dec y))
-              (recur jets rocks rock-count grid [nx (dec y)])
-              (let [grid' (place grid nx y \#)]
-                (recur
-                  jets
-                  (next rocks)
-                  (inc rock-count)
-                  grid'
-                  (rock-spawn-position grid')))))))))
+        (let [nx (push jet x)
+              nx (if (free? grid nx y) nx x)]
+          #_(println jet)
+          #_(print-grid (place grid nx y \@))
+          (if (free? grid nx (dec y))
+            (recur jets rocks rock-count grid peaks$ [nx (dec y)])
+            (let [grid' (place grid nx y \#)]
+              (recur
+                jets
+                (next rocks)
+                (inc rock-count)
+                grid'
+                (conj! peaks$ (highest-point grid))
+                (rock-spawn-position grid')))))))))
+
+
+(defn part-1
+  [input]
+  (-> (simulate input 2022)
+      (first)
+      (highest-point)))
+
+
+(defn last-index-while
+  [pred coll]
+  (->> (take-while pred coll)
+       (count)
+       (dec)))
 
 
 (defn part-2
   [input]
-  )
+  (let [jet-count          (count input)
+        sim-rock-nr        (inc (* 5 jet-count))
+        [grid peaks] (simulate input sim-rock-nr)
+        g                  (subvec grid (* 2 jet-count))
+        cycle-height       (->> (range jet-count (quot (count g) 2))
+                                (keep (fn [n]
+                                        (when (->> (partition n g)
+                                                   (take 2)
+                                                   (apply =))
+                                          n)))
+                                (first))
+        first-cycle-start  (->> (range)
+                                (filter (fn [i]
+                                          (->> (drop i grid)
+                                               (partition cycle-height)
+                                               (take 2)
+                                               (apply =))))
+                                (first))
+        first-cycle-end    (+ first-cycle-start cycle-height)
+        rocks-before-cycle (dec (last-index-while #(<= % first-cycle-start) peaks))
+        rocks-after-cycle  (dec (last-index-while #(<= % first-cycle-end) peaks))
+        rocks-per-cycle    (- rocks-after-cycle rocks-before-cycle)
+        nr-of-cycles       (quot 1000000000000 rocks-per-cycle)]
+    (+ (dec first-cycle-start) (* nr-of-cycles cycle-height))))
 
 
 (comment
@@ -165,8 +201,9 @@
   (part-1 task-input)                                       ; => 3135
   (crit/quick-bench (part-1 task-input))
 
+  ; FIXME: code works for example but not for task input :(
   ;; Part 2
-  (part-2 test-input)                                       ; =>
+  (part-2 test-input)                                       ; => 1514285714288
   (part-2 task-input)                                       ; =>
   (crit/quick-bench (part-2 task-input))
 
