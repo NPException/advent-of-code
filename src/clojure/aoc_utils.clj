@@ -323,9 +323,9 @@
   ([^long n ^long step ^IPersistentVector v]
    (lazy-seq
      (let [num (count v)]
-       (if (<= num n)
+       (if (<= num step)
          [v]
-         (cons (subvec v 0 n)
+         (cons (subvec v 0 (min n num))
            (vpartition-all n step (subvec v step num))))))))
 
 
