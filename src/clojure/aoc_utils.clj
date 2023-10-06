@@ -205,6 +205,17 @@
    (assoc! m k (apply f (get m k) x y z more))))
 
 
+(defmacro ifelse
+  "Takes a set of test/expr pairs, followed by an optional default expression.
+  (Like cond, but without emitting a final `if` for a default expression)"
+  [if-test then & [else & more-clauses]]
+  `(if ~if-test
+     ~then
+     ~(if more-clauses
+        `(ifelse ~else ~@more-clauses)
+        else)))
+
+
 (defn group-by-and-map
   "Returns a map of the elements of coll keyed by the result of
   kf on each element. The value at each key will be a vector of the
