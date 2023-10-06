@@ -248,7 +248,8 @@
 
 (defn write-png!
   [out ^BufferedImage image]
-  (ImageIO/write image "png" (io/output-stream out)))
+  (with-open [os (io/output-stream out)]
+    (ImageIO/write image "png" os)))
 
 
 (defprotocol GifRecorder
