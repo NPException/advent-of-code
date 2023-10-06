@@ -2,7 +2,8 @@
   (:require
     [aoc-utils :as u]
     [clojure.java.io :as io]
-    [clojure.math :as math])
+    [clojure.math :as math]
+    [clojure.string :as str])
   (:import (de.npe.imageutils GifWriter)
            (java.awt RenderingHints)
            (java.awt.image BufferedImage)
@@ -290,8 +291,19 @@
         (-> (assoc m k (color-fade-mapping float-colors))
             (assoc (keyword (str (name k) "-inverted")) (color-fade-mapping (reverse float-colors))))))
     {}
-    {:thermal-cam [0x000033 0xCC1919 0xFFE500 0xFFFFFF]}))
+    {:thermal-cam  [0x000033 0xCC1919 0xFFE500 0xFFFFFF]
+     :retro-height [0x219C90 0xE9B824 0xEE9322 0xD83F31]    ; https://colorhunt.co/palette/219c90e9b824ee9322d83f31
+     :ocean        [0x0C356A 0x279EFF 0x40F8FF 0xD5FFD0]    ; https://colorhunt.co/palette/0c356a279eff40f8ffd5ffd0
+     }))
 
+(defn ^:private palette
+  "Convenience function to take palette path param from colorhunt.co and print out clj conforming hex values.
+  Those can be quickly copied into the color fades table above."
+  [s]
+  (->> (str/upper-case s)
+       (partition 6)
+       (map #(apply str "0x" %))
+       (apply println)))
 
 
 (defn greyscale-avg
@@ -429,31 +441,41 @@
       grid)))
 
 
-(defn record-as-heatmap!
-  "Writes a heatmap of the data sequence as a png.
-  `output` - where to write the image to.
-  `heat-fn` - a 3-arg function which will receive a current value of the heatmap (nil if it's for the first dataset),
-              a piece of data, and value for the same piece of date in the previous frame (nil on first frame).
-              The function will return the new value for the heatmap at that point.
-  `image-fn` - function that takes the finished heatmap and creates a BufferedImage from it."
-  [output heat-start-val heat-fn image-fn data-seq]
+(defn heatmap
+  "Turns a data sequence into a single heatmap grid.
+  `heat-fn` - a 3-arg function which will receive a current value of the heatmap (`heat-start-val` if it's for the first data frame),
+              a piece of data from the current frame, and value for the same piece of data in the previous frame (nil on first frame).
+              The function will return the new value for the heatmap at that point."
+  [heat-start-val heat-fn data-seq]
   (let [first-frame (first data-seq)
         width       (count (first first-frame))
-        heatstrip   (loop [heatstrip        (repeat heat-start-val)
+        height      (count first-frame)
+        heatstrip   (loop [heatstrip        (repeat (* width height) heat-start-val)
                            prev-frame-strip (repeat nil)
                            [frame & more] data-seq]
-                      (if (nil? more)
-                        heatstrip
+                      (if (nil? frame)
+                        (vec heatstrip)
                         (let [frame-strip (mapcat identity frame)]
                           (recur
                             (mapv heat-fn heatstrip frame-strip prev-frame-strip)
                             frame-strip
-                            more))))
-        heatmap     (partition width heatstrip)]
-    (write-png!
-      output
-      (image-fn heatmap)))
+                            more))))]
+    (partition width heatstrip)))
+
+
+(defn record-as-heatmap!
+  "Writes a heatmap of the data sequence as a png.
+  `output` - where to write the image to.
+  `heat-fn` - see `image-utils/heatmap`
+  `image-fn` - function that takes the finished heatmap and creates a BufferedImage from it."
+  [output heat-start-val heat-fn image-fn data-seq]
+  (write-png!
+    output
+    (image-fn (heatmap heat-start-val heat-fn data-seq)))
   data-seq)
+
+; TODO: Maybe add `record-as-heatmap-gif!`.
+;       This would for each frame generate a heatmap up to that frame.
 
 
 (comment
