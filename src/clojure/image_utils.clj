@@ -269,7 +269,8 @@
   "Takes a single :int type pixel and converts it to greyscale by a simple average calculation."
   [^long pixel]
   (let [[^double r ^double g ^double b] (rgb->floats pixel)
-        avg (-> r (+ g) (+ b) (/ 3.0))]
+        avg (/ (+ r g b)
+               3.0)]
     [avg avg avg]))
 
 
@@ -281,9 +282,9 @@
   [^long pixel]
   ; taken from https://stackoverflow.com/a/689547
   (let [[^double r ^double g ^double b] (rgb->floats pixel)
-        y (-> (* 0.2126 (math/pow r 2.2))
-              (+ (* 0.7152 (math/pow g 2.2)))
-              (+ (* 0.0722 (math/pow b 2.2))))
+        y  (+ (* 0.2126 (math/pow r 2.2))
+              (* 0.7152 (math/pow g 2.2))
+              (* 0.0722 (math/pow b 2.2)))
         L* (-> 116
                (* (math/pow y one-third))
                (- 16)
@@ -296,8 +297,8 @@
   "Loads an image from the given source (via io/input-stream) and returns a nested vector
   of RGB values with the desired pixel-type"
   [pixel-type source]
-  (let [image (ImageIO/read (io/input-stream source))
-        width (.getWidth image)
+  (let [image  (ImageIO/read (io/input-stream source))
+        width  (.getWidth image)
         height (.getHeight image)
         pixels (.getRGB image 0 0 width height (ints nil) 0 width)]
     (into []
