@@ -41,7 +41,7 @@
 
 
 (defn heatmap!
-  [part-id data]
+  [part-id data-seq]
   (img/record-as-heatmap!
     (str "visualizations/aoc_2020/day_11_part_" part-id "_heatmap.png")
     0
@@ -50,7 +50,7 @@
     (u/rcomp
       img/normalize
       (partial img/image-from-data (img/color-fades :thermal-cam) 16))
-    data))
+    data-seq))
 
 
 (defn find-equilibrium-seats
