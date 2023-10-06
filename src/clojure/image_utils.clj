@@ -403,19 +403,23 @@
 (defn record-as-heatmap!
   "Writes a heatmap of the data sequence as a png.
   `output` - where to write the image to.
-  `heat-fn` - a 2-arg function which will receive a current value of the heatmap (nil if it's for the first dataset),
-              and a piece of data. The function will return the new value for the heatmap at that point.
+  `heat-fn` - a 3-arg function which will receive a current value of the heatmap (nil if it's for the first dataset),
+              a piece of data, and value for the same piece of date in the previous frame (nil on first frame).
+              The function will return the new value for the heatmap at that point.
   `image-fn` - function that takes the finished heatmap and creates a BufferedImage from it."
   [output heat-start-val heat-fn image-fn data-seq]
   (let [first-frame (first data-seq)
         width       (count (first first-frame))
         heatstrip   (loop [heatstrip (repeat heat-start-val)
+                           prev-frame-strip (repeat nil)
                            [frame & more] data-seq]
                       (if (nil? more)
                         heatstrip
-                        (recur
-                          (mapv heat-fn heatstrip (mapcat identity frame))
-                          more)))
+                        (let [frame-strip (mapcat identity frame)]
+                          (recur
+                            (mapv heat-fn heatstrip frame-strip prev-frame-strip)
+                            frame-strip
+                            more))))
         heatmap     (partition width heatstrip)]
     (write-png!
       output
