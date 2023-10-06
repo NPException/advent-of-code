@@ -476,6 +476,16 @@
   [^double a ^double b ^double amount]
   (+ a (* amount (- b a))))
 
+(defn clampl
+  ^long
+  [^long x ^long min ^long max]
+  (-> x (Math/min max) (Math/max min)))
+
+(defn clampd
+  ^double
+  [^double x ^double min ^double max]
+  (-> x (Math/min max) (Math/max min)))
+
 
 (defn ^:private graph-search
   [coll graph rf children-fn ctx start]

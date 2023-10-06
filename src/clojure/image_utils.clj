@@ -37,6 +37,7 @@
 
 
 (defn rgbi
+  "Create integer RGB value from bytes RGB components"
   ^long
   ([[r g b]]
    (rgbi r g b))
@@ -47,6 +48,7 @@
 
 
 (defn rgbf
+  "Create integer RGB value from float RGB components"
   ^long
   ([[r g b]]
    (rgbf r g b))
@@ -54,6 +56,23 @@
    (bit-or (bit-shift-left (bit-and (long (* r 255)) 0xFF) 16)
            (bit-shift-left (bit-and (long (* g 255)) 0xFF) 8)
            (bit-and (long (* b 255)) 0xFF))))
+
+
+(defn rgb->bytes
+  "Create bytes RGB components from single integer RGB"
+  [^long rgb-int]
+  [(bit-and (bit-shift-right rgb-int 16) 0xFF)
+   (bit-and (bit-shift-right rgb-int 8) 0xFF)
+   (bit-and rgb-int 0xFF)])
+
+
+(defn rgb->floats
+  "Create float RGB components from single integer RGB"
+  [^long rgb-int]
+  [(/ (bit-and (bit-shift-right rgb-int 16) 0xFF) 255.0)
+   (/ (bit-and (bit-shift-right rgb-int 8) 0xFF) 255.0)
+   (/ (bit-and rgb-int 0xFF) 255.0)])
+
 
 
 (defn lerp-hsvl
@@ -246,6 +265,51 @@
             ))))))
 
 
+(defn greyscale-avg
+  "Takes a single :int type pixel and converts it to greyscale by a simple average calculation."
+  [^long pixel]
+  (let [[^double r ^double g ^double b] (rgb->floats pixel)
+        avg (-> r (+ g) (+ b) (/ 3.0))]
+    [avg avg avg]))
+
+
+(def ^{:private true, :const true, :tag 'double} one-third (/ 1.0 3.0))
+
+(defn greyscale-LAB
+  "Takes a single :int type pixel and converts it to greyscale by calculating
+  the L* value of the color in LAB color space. (preserves perceived brightness better)"
+  [^long pixel]
+  ; taken from https://stackoverflow.com/a/689547
+  (let [[^double r ^double g ^double b] (rgb->floats pixel)
+        y (-> (* 0.2126 (math/pow r 2.2))
+              (+ (* 0.7152 (math/pow g 2.2)))
+              (+ (* 0.0722 (math/pow b 2.2))))
+        L* (-> 116
+               (* (math/pow y one-third))
+               (- 16)
+               (/ 100.0)
+               (u/clampd 0.0 1.0))]
+    [L* L* L*]))
+
+
+(defn load-image-pixels
+  "Loads an image from the given source (via io/input-stream) and returns a nested vector
+  of RGB values with the desired pixel-type"
+  [pixel-type source]
+  (let [image (ImageIO/read (io/input-stream source))
+        width (.getWidth image)
+        height (.getHeight image)
+        pixels (.getRGB image 0 0 width height (ints nil) 0 width)]
+    (into []
+      (comp
+        (map (case pixel-type
+               :int identity
+               :bytes rgb->bytes
+               :floats rgb->floats))
+        (u/partitioning width))
+      pixels)))
+
+
 (defn write-png!
   [out ^BufferedImage image]
   (with-open [os (io/output-stream out)]
@@ -388,6 +452,16 @@
          (record-frame! rec))
     (finish-recording! rec))
 
+
+  (defmacro test-pixel-transform [algo-sym]
+    (let [algo-name (name algo-sym)]
+      `(->> (io/resource "images/pp.jpg")
+            (load-image-pixels :int)
+            (image-from-data ~algo-sym)
+            (write-png! (str "target/pp-" ~algo-name ".png")))))
+
+  (test-pixel-transform greyscale-avg)
+  (test-pixel-transform greyscale-LAB)
+
   ;
   )
-
