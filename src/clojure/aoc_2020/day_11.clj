@@ -49,11 +49,7 @@
       (if (and prev (not= val prev)) (inc h) h))
     (u/rcomp
       img/normalize
-      (partial img/image-from-data
-        (img/color-fade-mapping [[0.25 0.0 0.2]
-                                 [1.0 0.9 0.0]
-                                 [1.0 1.0 1.0]])
-        16))
+      (partial img/image-from-data (img/color-fades :thermal-cam) 16))
     data))
 
 

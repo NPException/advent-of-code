@@ -36,22 +36,21 @@
       (.writeToSequence gif-writer image))))
 
 
-(defn rgbi
+(defn bytes->rgb
   "Create integer RGB value from bytes RGB components"
   ^long
   ([[r g b]]
-   (rgbi r g b))
+   (bytes->rgb r g b))
   ([^long r ^long g ^long b]
    (bit-or (bit-shift-left (bit-and r 0xFF) 16)
            (bit-shift-left (bit-and g 0xFF) 8)
            (bit-and b 0xFF))))
 
-
-(defn rgbf
+(defn floats->rgb
   "Create integer RGB value from float RGB components"
   ^long
   ([[r g b]]
-   (rgbf r g b))
+   (floats->rgb r g b))
   ([^double r ^double g ^double b]
    (bit-or (bit-shift-left (bit-and (long (* r 255)) 0xFF) 16)
            (bit-shift-left (bit-and (long (* g 255)) 0xFF) 8)
@@ -65,6 +64,15 @@
    (bit-and (bit-shift-right rgb-int 8) 0xFF)
    (bit-and rgb-int 0xFF)])
 
+(defn floats->bytes
+  "Create bytes RGB components from float RGB components"
+  ([[r g b]]
+   (floats->bytes r g b))
+  ([^double r ^double g ^double b]
+   [(long (* r 255.0))
+    (long (* g 255.0))
+    (long (* b 255.0))]))
+
 
 (defn rgb->floats
   "Create float RGB components from single integer RGB"
@@ -72,6 +80,15 @@
   [(/ (bit-and (bit-shift-right rgb-int 16) 0xFF) 255.0)
    (/ (bit-and (bit-shift-right rgb-int 8) 0xFF) 255.0)
    (/ (bit-and rgb-int 0xFF) 255.0)])
+
+(defn bytes->floats
+  "Create float RGB components from bytes RGB components"
+  ([[r g b]]
+   (bytes->floats r g b))
+  ([^long r ^long g ^long b]
+   [(/ r 255.0)
+    (/ g 255.0)
+    (/ b 255.0)]))
 
 
 
@@ -191,8 +208,8 @@
          width  (count (first pixels))
          rgb-fn (case pixel-type
                   :int (fn [^long x] (int x))
-                  :bytes (fn [[r g b]] (rgbi r g b))
-                  :floats (fn [[r g b]] (rgbf r g b)))
+                  :bytes (fn [[r g b]] (bytes->rgb r g b))
+                  :floats (fn [[r g b]] (floats->rgb r g b)))
          image  (BufferedImage. width height BufferedImage/TYPE_INT_RGB)]
      (loop [[row & more-rows] pixels
             y 0]
@@ -263,6 +280,18 @@
                 section-value (-> (* value lerps-count)
                                   (- lerp-section))]
             (lerp-fn section-value)))))))
+
+
+(def color-fades
+  "Predefined color transition functions"
+  (reduce-kv
+    (fn [m k colors]
+      (let [float-colors (map rgb->floats colors)]
+        (-> (assoc m k (color-fade-mapping float-colors))
+            (assoc (keyword (str (name k) "-inverted")) (color-fade-mapping (reverse float-colors))))))
+    {}
+    {:thermal-cam [0x000033 0xCC1919 0xFFE500 0xFFFFFF]}))
+
 
 
 (defn greyscale-avg
@@ -410,7 +439,7 @@
   [output heat-start-val heat-fn image-fn data-seq]
   (let [first-frame (first data-seq)
         width       (count (first first-frame))
-        heatstrip   (loop [heatstrip (repeat heat-start-val)
+        heatstrip   (loop [heatstrip        (repeat heat-start-val)
                            prev-frame-strip (repeat nil)
                            [frame & more] data-seq]
                       (if (nil? more)
