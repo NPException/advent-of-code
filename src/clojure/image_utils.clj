@@ -22,7 +22,7 @@
     (-> .getParentFile .mkdirs)))
 
 
-(defn write-to-gif
+(defn ^:private write-to-gif!
   "Writes a sequence of BufferedImages as a gif to the desired output.
   `out` is coerced to an OutputStream via clojure.java.io/output-stream.
   `delay-ms` the delay in ms between each frame. Note that delays have a resolution of 10 ms.
@@ -188,6 +188,9 @@
          (every? float? rgb)) :floats))
 
 
+; TODO: refactor so that all imaging functions takethe main piece of data in the first position (pixels, grid, data-seq, etc..)
+
+
 (defn image-from-rgb
   "Takes `pixels` (a sequence of sequences, containing rgb color values).
   'pixel-type' can be one of :int :byte-tuple :float-tuple.
@@ -257,7 +260,7 @@
 
 ; TODO: allow for unequal size ranges: color A->B = 0.0->0.5, color B->C = 0.5->0.75, color C->D = 0.75->1.0
 (defn color-fade-mapping
-  "Returns a mapping-fn for use in `image-from-data`.
+  "Returns a pixel mapping-fn for use in `image-from-data`.
   It requires data to be floats between 0.0 and 1.0.
   Colors need to be in rgb float tuples.
   Will HSL-lerp between the colors according to the value."
@@ -284,7 +287,7 @@
 
 
 (def color-fades
-  "Predefined color transition functions"
+  "Predefined color transition functions for normalized data values."
   (reduce-kv
     (fn [m k colors]
       (let [float-colors (map rgb->floats colors)]
@@ -370,7 +373,7 @@
   (let [first-frame   (promise)
         frame-atom    (atom first-frame)
         writer-thread (future
-                        (write-to-gif out delay-ms loop-limit
+                        (write-to-gif! out delay-ms loop-limit
                           (->> @first-frame
                                (iterate #(deref (second %)))
                                (take-while some?)
@@ -413,7 +416,7 @@
     data-seq]
    (print "Writing GIF... ")
    (flush)
-   (write-to-gif output delay-ms (if loop? 0 1)
+   (write-to-gif! output delay-ms (if loop? 0 1)
      (->> data-seq
           (partition-all 2 1)
           (mapcat (fn [[data next-data]]
@@ -423,23 +426,45 @@
                             gif-fps         (/ 100.0 gif-frame-delay)]
                         (repeat (int (* 5 gif-fps)) (image-fn data)))
                       [(image-fn data)])))))
-   (println "Done!")
-   data-seq))
+   (println "Done!")))
 
 
-(defn normalize
-  "Takes a 2-dimensional grid of numeric values, and normalizes them to values between 0.0 and 1.0."
+(defn find-min-max-grid-values
+  "Takes a 2-dimensional grid of numeric values, and returns a tuple of doubles [min max]"
   [grid]
-  (let [strip     (apply concat grid)
-        min-val   (double (apply min strip))
-        max-val   (double (apply max strip))
-        range-val (- max-val min-val)]
-    (map (fn [row]
-           (map (fn [value]
-                  (/ (- (double value) min-val) range-val))
-             row))
-      grid)))
+  (let [strip (apply concat grid)]
+    [(double (apply min strip))
+     (double (apply max strip))]))
 
+
+(defn normalize-grid-values
+  "Takes a 2-dimensional grid of numeric values, and normalizes them to values between 0.0 and 1.0.
+  Optionally takes the known min and max values."
+  ([grid]
+   (let [[min-val max-val] (find-min-max-grid-values grid)]
+     (normalize-grid-values grid min-val max-val 0.0)))
+  ([grid ^double min-val ^double max-val ^double zero-range-default]
+   (let [range-val (- max-val min-val)]
+     (if (zero? range-val)
+       ; edge case: all grid values are identical
+       (let [height (count grid)
+             width (count (first grid))]
+         (->> (vec (repeat (* width height) zero-range-default))
+              (u/vpartition width)
+              (vec)))
+       ; regular normalization of each value
+       (mapv (fn [row]
+               (mapv (fn [value]
+                       (/ (- (double value) min-val) range-val))
+                 row))
+         grid)))))
+
+
+; TODO: Provide convenience functions like to save heatmap images and gifs.
+;       (See `aoc-2020.day-11/heatmap!` and `aoc-2020.day-11/heatmap-gifs!`)
+;       Functions should take the `data-seq` to be used, the desired `output`,
+;       the `heat-fn` (optional, increase heat on changing value by default),
+;       and a `color-palette` keyword, which will be used to grab a mapping-fn from the color-fades table.
 
 (defn heatmap
   "Turns a data sequence into a single heatmap grid.
@@ -462,20 +487,6 @@
                             more))))]
     (partition width heatstrip)))
 
-
-(defn record-as-heatmap!
-  "Writes a heatmap of the data sequence as a png.
-  `output` - where to write the image to.
-  `heat-fn` - see `image-utils/heatmap`
-  `image-fn` - function that takes the finished heatmap and creates a BufferedImage from it."
-  [output heat-start-val heat-fn image-fn data-seq]
-  (write-png!
-    output
-    (image-fn (heatmap heat-start-val heat-fn data-seq)))
-  data-seq)
-
-; TODO: Maybe add `record-as-heatmap-gif!`.
-;       This would for each frame generate a heatmap up to that frame.
 
 
 (comment

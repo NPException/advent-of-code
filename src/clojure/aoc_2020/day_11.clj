@@ -40,16 +40,42 @@
     seats))
 
 
+(defn heat-fn
+  [heat-level val prev]
+  (if (and prev (not= val prev))
+    (inc heat-level)
+    heat-level))
+
+
 (defn heatmap!
   [part-id data-seq]
-  (img/record-as-heatmap!
+  (img/write-png!
     (str "visualizations/aoc_2020/day_11_part_" part-id "_heatmap.png")
-    0
-    (fn [h val prev]
-      (if (and prev (not= val prev)) (inc h) h))
-    (u/rcomp
-      img/normalize
-      (partial img/image-from-data (img/color-fades :thermal-cam) 16))
+    (->> (img/heatmap 0 heat-fn data-seq)
+         (img/normalize-grid-values)
+         (img/image-from-data (img/color-fades :thermal-cam) 16)))
+  data-seq)
+
+
+(defn heatmap-gif!
+  [part-id data-seq]
+  (let [heatmap-fn      #(img/heatmap 0 heat-fn %)
+        final-heatmap   (heatmap-fn data-seq)
+        [min-val max-val] (img/find-min-max-grid-values final-heatmap)
+        gif-source-seqs (->> (reverse data-seq)
+                             (vec)
+                             (u/vpartition-all (count data-seq) 1)
+                             (mapv rseq)
+                             (reverse))]
+    (img/record-as-gif!
+      (str "visualizations/aoc_2020/day_11_part_" part-id "_heatmap.gif")
+      (u/rcomp
+        heatmap-fn
+        #(img/normalize-grid-values % min-val max-val 1.0)
+        #(img/image-from-data (img/color-fades :thermal-cam) 8 %))
+      {:delay-ms 30
+       :loop?    false}
+      gif-source-seqs)
     data-seq))
 
 
@@ -65,15 +91,7 @@
          (take-while #(apply not= %))
          (map second)
          (heatmap! part-id)
-         #_(img/record-as-gif!
-             (img/file (str "aoc_2020/day_11_part_" part-id ".gif"))
-             (partial img/image-from-data
-               {\. 0x531055
-                \L 0x679C38
-                \# 0x90C165}
-               16)
-             {:delay-ms 250
-              :loop?    false})
+         (heatmap-gif! part-id)
          last
          (apply concat)
          (filter #(= % \#))
