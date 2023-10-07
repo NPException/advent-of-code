@@ -109,6 +109,7 @@
 
 (defn rcomp
   "Like `comp` but composes functions in reverse order."
+  ([f] f)
   ([f g] (comp g f))
   ([f g & fs]
    (reduce rcomp (list* f g fs))))

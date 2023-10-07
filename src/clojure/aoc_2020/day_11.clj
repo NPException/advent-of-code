@@ -66,7 +66,7 @@
                            (vec)
                            (u/vpartition-all (count data-seq) 1)
                            (mapv rseq)
-                           (reverse)
+                           (rseq)
                            (mapv heatmap-fn))]
     (img/record-as-gif!
       (str "visualizations/aoc_2020/day_11_part_" part-id "_heatmap.gif")
