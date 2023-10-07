@@ -59,23 +59,23 @@
 
 (defn heatmap-gif!
   [part-id data-seq]
-  (let [heatmap-fn      #(img/heatmap 0 heat-fn %)
-        final-heatmap   (heatmap-fn data-seq)
+  (let [heatmap-fn    #(img/heatmap 0 heat-fn %)
+        final-heatmap (heatmap-fn data-seq)
         [min-val max-val] (img/find-min-max-grid-values final-heatmap)
-        gif-source-seqs (->> (reverse data-seq)
-                             (vec)
-                             (u/vpartition-all (count data-seq) 1)
-                             (mapv rseq)
-                             (reverse))]
+        heatmaps      (->> (reverse data-seq)
+                           (vec)
+                           (u/vpartition-all (count data-seq) 1)
+                           (mapv rseq)
+                           (reverse)
+                           (mapv heatmap-fn))]
     (img/record-as-gif!
       (str "visualizations/aoc_2020/day_11_part_" part-id "_heatmap.gif")
       (u/rcomp
-        heatmap-fn
         #(img/normalize-grid-values % min-val max-val 1.0)
         #(img/image-from-data (img/color-fades :thermal-cam) 8 %))
       {:delay-ms 30
        :loop?    false}
-      gif-source-seqs)
+      heatmaps)
     data-seq))
 
 
