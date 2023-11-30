@@ -84,12 +84,13 @@
 
 (defn part-2
   [input ^long size]
-  (let [update-progress (d/spawn-progress-bar "2022 Day 15 - Part 2" 0 size)
+  (let [progress-bar (d/spawn-progress-bar "2022 Day 15 - Part 2" 0 size)
         range-fns       (->> (parse-input input)
                              (mapv #(prepare-beacon-2 size %)))
         [x y] (->> (range (inc size))
-                   (keep #(find-beacon range-fns (update-progress %)))
+                   (keep #(find-beacon range-fns (.set progress-bar %)))
                    (first))]
+    (.hide progress-bar)
     (-> (* x 4000000)
         (+ y))))
 
