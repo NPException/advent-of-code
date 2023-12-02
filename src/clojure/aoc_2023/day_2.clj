@@ -1,7 +1,5 @@
 (ns aoc-2023.day-2
   (:require [aoc-utils :as u]
-            [clojure.math :as math]
-            [clojure.set :as set]
             [clojure.string :as str]
             [criterium.core :as crit]))
 
@@ -19,8 +17,8 @@
   (->> (str/split (str/trim s) #", ")
        (into {:red 0, :green 0, :blue 0}
          (map (fn [die]
-                       (let [[n color] (str/split die #" ")]
-                         [(keyword color) (parse-long n)]))))))
+                (let [[n color] (str/split die #" ")]
+                  [(keyword color) (parse-long n)]))))))
 
 (defn parse-game
   [i s]
@@ -65,9 +63,26 @@
        (apply +)))
 
 
+;; PART 2
+
+(defn game-power
+  [[_ draws]]
+  (->> (reduce
+         (fn [acc {:keys [red green blue]}]
+           (-> (update acc :red max red)
+               (update :green max green)
+               (update :blue max blue)))
+         draws)
+       vals
+       (apply *)))
+
+; For each game, find the minimum set of cubes that must have been present.
+; What is the sum of the power of these sets?
 (defn part-2
   [input]
-  )
+  (->> (parse-input input)
+       (mapv game-power)
+       (apply +)))
 
 
 (comment
@@ -77,8 +92,8 @@
   (crit/quick-bench (part-1 task-input))
 
   ;; Part 2
-  (part-2 test-input)                                       ; =>
-  (part-2 task-input)                                       ; =>
+  (part-2 test-input)                                       ; => 2286
+  (part-2 task-input)                                       ; => 56580
   (crit/quick-bench (part-2 task-input))
 
   )
