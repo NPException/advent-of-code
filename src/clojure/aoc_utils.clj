@@ -220,13 +220,13 @@
 (defn group-by-and-map
   "Returns a map of the elements of coll keyed by the result of
   kf on each element. The value at each key will be a vector of the
-  corresponding elements mapped by mf, in the order they appeared in coll."
-  [kf mf coll]
+  corresponding elements mapped by vf, in the order they appeared in coll."
+  [kf vf coll]
   (persistent!
     (reduce
-      (fn [ret x]
+      (fn [m x]
         (let [k (kf x)]
-          (assoc! ret k (conj (get ret k []) (mf x)))))
+          (assoc! m k (conj (m k []) (vf x)))))
       (transient {}) coll)))
 
 
@@ -468,23 +468,22 @@
 
 (defn +l
   "+ pre type-hinted for longs"
-  ^long
-  ([] 0)
-  ([^long x] x)
-  ([^long x ^long y] (+ x y))
+  (^long [] 0)
+  (^long [^long x] x)
+  (^long [^long x ^long y] (+ x y))
   ([x y & more] (reduce +l (+l x y) more)))
 
 (defn +d
   "+ pre type-hinted for doubles"
-  ^double
-  ([] 0)
-  ([^double x] x)
-  ([^double x ^double y] (+ x y))
+  (^double [] 0.0)
+  (^double [^double x] x)
+  (^double [^double x ^double y] (+ x y))
   ([x y & more] (reduce +d (+d x y) more)))
 
 
 (defn lerp
   "Linear interpolation between two values"
+  ^double
   [^double a ^double b ^double amount]
   (+ a (* amount (- b a))))
 
@@ -679,9 +678,10 @@
 
 
 
-(def ^:dynamic *aoc-session-id* nil)
+(def ^:private ^:dynamic *aoc-session-id* nil)
 
-(defn load-session-id []
+(defn ^:private load-session-id
+  []
   (if-some [session-id (or *aoc-session-id*
                            (System/getenv "AOC_SESSION")
                            (try
