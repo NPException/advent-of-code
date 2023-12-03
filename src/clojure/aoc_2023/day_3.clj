@@ -34,7 +34,10 @@
                              (group-by (fn [[_xy ^char e]]
                                          (Character/isDigit e))))]
     {:symbols (into {} symbols)
-     :digits  (into {} digits)}))
+     :digits  (into {} digits)
+     :gears   (into {}
+                (filter #(= \* (second %)))
+                symbols)}))
 
 (defn build-number
   [digits [[x y] _digit]]
@@ -53,20 +56,14 @@
                           (parse-long))]
     [[start-x y] number]))
 
-(defn find-numbers
-  [input neighbour-fn]
-  (let [{:keys [symbols digits]} (parse-input input)]
-    (->> symbols
-         (reduce-kv
-           (fn [neighbours xy _sym]
-             (into neighbours (neighbour-fn digits xy)))
-           [])
-         (into []
-           (comp
-             (distinct)
-             (map #(build-number digits %))
-             (distinct)
-             (map second))))))
+(defn build-numbers
+  [digits digit-elements]
+  (->> digit-elements
+       (into []
+         (comp
+           (distinct)
+           (map #(build-number digits %))
+           (distinct)))))
 
 
 (def offsets
@@ -74,7 +71,7 @@
              dx (range -1 2)]
          [dx dy])))
 
-(defn neighbours
+(defn find-neighbours
   [digit-map [x y]]
   (reduce
     (fn [acc [dx dy]]
@@ -87,23 +84,39 @@
 
 (defn part-1
   [input]
-  (apply + (find-numbers input neighbours)))
+  (let [{:keys [symbols digits]} (parse-input input)]
+    (->> symbols
+         (reduce-kv
+           (fn [neighbours xy _sym]
+             (into neighbours (find-neighbours digits xy)))
+           [])
+         (build-numbers digits)
+         (map second)
+         (apply +))))
 
 
 (defn part-2
   [input]
-  )
+  (let [{:keys [gears digits]} (parse-input input)]
+    (->> gears
+         (map #(->> (first %)
+                    (find-neighbours digits)
+                    (build-numbers digits)
+                    (mapv second)))
+         (filter #(= 2 (count %)))
+         (map #(apply * %))
+         (apply +))))
 
 
 (comment
   ;; Part 1
   (part-1 test-input)                                       ; => 4361
-  (part-1 task-input)                                       ; =>
+  (part-1 task-input)                                       ; => 540212
   (crit/quick-bench (part-1 task-input))
 
   ;; Part 2
-  (part-2 test-input)                                       ; =>
-  (part-2 task-input)                                       ; =>
+  (part-2 test-input)                                       ; => 467835
+  (part-2 task-input)                                       ; => 87605697
   (crit/quick-bench (part-2 task-input))
 
   )
