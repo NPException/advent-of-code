@@ -22,19 +22,43 @@
                  [(read-string (str "#{" winning "}"))
                   (read-string (str "#{" own "}"))])))))
 
+(defn num-matches
+  [[winning owned]]
+  (count (set/intersection winning owned)))
+
 (defn part-1
   [input]
   (->> (parse-input input)
-       (map #(apply set/intersection %))
-       (map count)
+       (map num-matches)
        (remove zero?)
        (map #(long (math/pow 2 (dec %))))
        (apply +)))
 
 
+(defn add-cards
+  [counts card-index matches]
+  (if (zero? matches)
+    counts
+    (let [factor (nth counts card-index)
+          next-index (inc card-index)]
+      (reduce
+        (fn [acc index]
+          (if-let [n (get acc index)]
+            (assoc acc index (+ n factor))
+            acc))
+        counts
+        (range next-index (+ next-index matches))))))
+
 (defn part-2
   [input]
-  )
+  (let [cards (parse-input input)]
+    (loop [counts (vec (repeat (count cards) 1))
+           i 0]
+      (if (>= i (count cards))
+        (apply + counts)
+        (let [matches (num-matches (nth cards i))]
+          (recur (add-cards counts i matches)
+            (inc i)))))))
 
 
 (comment
@@ -44,8 +68,8 @@
   (crit/quick-bench (part-1 task-input))
 
   ;; Part 2
-  (part-2 test-input)                                       ; =>
-  (part-2 task-input)                                       ; =>
+  (part-2 test-input)                                       ; => 30
+  (part-2 task-input)                                       ; => 12648035
   (crit/quick-bench (part-2 task-input))
 
   )
