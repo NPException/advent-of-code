@@ -1,8 +1,6 @@
 (ns aoc-2019.day-2
   (:require [aoc-utils :as u]
             [aoc-2019.intcode-interpreter :as intcode]
-            [clojure.math :as math]
-            [clojure.string :as str]
             [criterium.core :as crit]))
 
 (set! *warn-on-reflection* true)
@@ -15,19 +13,30 @@
 (def test-input "1,9,10,3,2,3,11,0,99,30,40,50  ,30")       ;; modified to work with the 12/2 replacements
 
 
-(defn part-1
-  [input]
-  (-> (intcode/create-state input)
-      (assoc-in [:mem 1] 12)
-      (assoc-in [:mem 2] 2)
+(defn run-with-replacements
+  [memory noun verb]
+  (-> (intcode/create-state memory)
+      (assoc-in [:mem 1] noun)
+      (assoc-in [:mem 2] verb)
       (intcode/run-program)
       (:mem)
       (nth 0)))
 
 
+(defn part-1
+  [input]
+  (run-with-replacements (u/read-as-vector input) 12 2))
+
+
 (defn part-2
   [input]
-  )
+  (let [memory (u/read-as-vector input)
+        [noun verb] (->> (for [noun (range 0 100)
+                               verb (range 0 100)]
+                           [noun verb])
+                         (u/first-match #(= 19690720 (apply run-with-replacements memory %))))]
+    (+ (* 100 noun)
+       verb)))
 
 
 (comment
@@ -37,8 +46,7 @@
   (crit/quick-bench (part-1 task-input))
 
   ;; Part 2
-  (part-2 test-input)                                       ; =>
-  (part-2 task-input)                                       ; =>
+  (part-2 task-input)                                       ; => 7195
   (crit/quick-bench (part-2 task-input))
 
   )

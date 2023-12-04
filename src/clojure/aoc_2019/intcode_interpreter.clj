@@ -6,45 +6,69 @@
 
 
 (defn create-state
-  [input-string]
+  [memory]
   {:ip    0
-   :mem   (u/read-as-vector input-string)
+   :mem   memory
    :steps 0
    :halt? false})
 
 
-(defn ^:private op-code
+(defn ^:private opcode
   [{:keys [mem ip]}]
   (nth mem ip))
 
+(defn ^:private instruction
+  [{:keys [mem ^long ip]} ^long instruction-length]
+  (subvec mem ip (+ ip instruction-length)))
 
-(defn ^:private fetch
+
+(defn ^:private memory-at
   ^long
-  [mem ^long i]
+  [{:keys [mem]} ^long i]
   (nth mem i))
 
 
 (defmulti ^:private execute-op
   "Execute the intcode operation specified by the value in memory that the instruction pointer
   is currently at."
-  op-code)
+  opcode)
+
+; TODO Write a convenience macro `defop` to shorten the op implementation process.
+;      It that takes a vector of n+1 elements (the state, the op itself, and its parameters)
+;      as well as a function body.
+;      Parameter names that start with `*` will use the parameter as a pointer and bind
+;      the value at that address to the name.
+(comment
+  ; example for ADD op
+  (defop 1 [state _ *a *b r]
+    (update state :mem assoc r (+ *a *b)))
+
+  ; will expand to:
+  (defmethod execute-op 1
+    [state]
+    (let [[_ *a6593 *b6598 r] (instruction state 4)
+          *a (memory-at state *a6593)
+          *b (memory-at state *b6598)]
+      (-> (update state :mem assoc r (+ *a *b))
+          (update :ip + 4))))
+  ;
+  )
 
 ;; ADD
 (defmethod execute-op 1
-  [{:keys [mem ^long ip] :as state}]
-  (let [[_ *a *b *r] (subvec mem ip (+ ip 4))
-        a (fetch mem *a)
-        b (fetch mem *b)
-        r (+ a b)]
-    (-> (update state :mem assoc *r r)
+  [state]
+  (let [[_ *a *b r] (instruction state 4)
+        a (memory-at state *a)
+        b (memory-at state *b)]
+    (-> (update state :mem assoc r (+ a b))
         (update :ip + 4))))
 
 ;; MUL
 (defmethod execute-op 2
-  [{:keys [mem ^long ip] :as state}]
-  (let [[_ *a *b *r] (subvec mem ip (+ ip 4))
-        a (fetch mem *a)
-        b (fetch mem *b)
+  [state]
+  (let [[_ *a *b *r] (instruction state 4)
+        a (memory-at state *a)
+        b (memory-at state *b)
         r (* a b)]
     (-> (update state :mem assoc *r r)
         (update :ip + 4))))
@@ -64,6 +88,6 @@
   [state]
   (loop [state state]
     (if (:halt? state)
-      (do (u/debug "Steps executed: {state :steps}")
+      (do #_(u/debug "Steps executed: {state :steps}")
           state)
       (recur (step-program state)))))
