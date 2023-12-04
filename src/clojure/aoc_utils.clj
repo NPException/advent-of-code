@@ -206,6 +206,30 @@
    (assoc! m k (apply f (get m k) x y z more))))
 
 
+(defn update-present
+  "Like update, but only updates if a mapping for the given key already exists."
+  ([m k f]
+   (if-let [[_ v] (find m k)]
+     (assoc m k (f v))
+     m))
+  ([m k f x]
+   (if-let [[_ v] (find m k)]
+     (assoc m k (f v x))
+     m))
+  ([m k f x y]
+   (if-let [[_ v] (find m k)]
+     (assoc m k (f v x y))
+     m))
+  ([m k f x y z]
+   (if-let [[_ v] (find m k)]
+     (assoc m k (f v x y z))
+     m))
+  ([m k f x y z & more]
+   (if-let [[_ v] (find m k)]
+     (assoc m k (apply f v x y z more))
+     m)))
+
+
 (defmacro ifelse
   "Takes a set of test/expr pairs, followed by an optional default expression.
   (Like cond, but without emitting a final `if` for a default expression)"

@@ -42,10 +42,7 @@
     (let [factor (nth counts card-index)
           next-index (inc card-index)]
       (reduce
-        (fn [acc index]
-          (if-let [n (get acc index)]
-            (assoc acc index (+ n factor))
-            acc))
+        #(u/update-present %1 %2 + factor)
         counts
         (range next-index (+ next-index matches))))))
 
