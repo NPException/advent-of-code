@@ -1,7 +1,6 @@
 (ns aoc-2019.intcode-interpreter
   (:require [aoc-utils :as u]
-            [clojure.string :as str])
-  (:import (clojure.lang PersistentQueue)))
+            [clojure.string :as str]))
 
 (set! *warn-on-reflection* true)
 (set! *unchecked-math* :warn-on-boxed)
@@ -12,7 +11,7 @@
   {:ip     0
    :mem    memory
    :halt?  false
-   :input  PersistentQueue/EMPTY
+   :input  []
    :output []
    :steps  0})
 
@@ -70,10 +69,10 @@
 ; Parameter names that start with `*` will always be used as is.
 (defmacro defop
   [op [state-sym & param-syms] & body]
-  (let [op (parse-long (re-find #"\d+" (name op)))
-        num-params (count param-syms)
+  (let [op               (parse-long (re-find #"\d+" (name op)))
+        num-params       (count param-syms)
         instruction-size (inc num-params)
-        mode-syms (mapv #(gensym (str (name %) "_mode_")) param-syms)]
+        mode-syms        (mapv #(gensym (str (name %) "_mode_")) param-syms)]
     `(defmethod execute-op ~op
        [~state-sym]
        (-> (let [[[_# ~@param-syms] [~@mode-syms]] (instruction ~state-sym ~instruction-size)
@@ -88,12 +87,12 @@
 
 ; extends to something like:
 #_(defmethod execute-op 1
-  [state]
-  (let [[[_ a b r] [a-mode b-mode]] (instruction state 4)
-        a (parameter state a a-mode)
-        b (parameter state b b-mode)]
-    (-> (update state :mem assoc r (+ a b))
-        (update :ip + 4))))
+    [state]
+    (let [[[_ a b r] [a-mode b-mode]] (instruction state 4)
+          a (parameter state a a-mode)
+          b (parameter state b b-mode)]
+      (-> (update state :mem assoc r (+ a b))
+          (update :ip + 4))))
 
 
 ;; MUL
@@ -103,10 +102,10 @@
 
 ;; INPUT : Opcode 3 takes a single integer as input and saves it to the position given by its only parameter.
 (defop CODE_3 [state *r]
-  (let [value (peek (:input state))]
-    (assert (some? value))
-    (-> (update state :mem assoc *r value)
-        (update :input pop))))
+  (let [input (:input state)]
+    (assert (seq input) "Expected input, but input was empty")
+    (-> (update state :mem assoc *r (first input))
+        (update :input subvec 1))))
 
 
 ;; OUTPUT : Opcode 4 outputs the value of its only parameter.
@@ -114,10 +113,35 @@
   (update state :output conj x))
 
 
+;; JUMP_IF_TRUE
+(defop CODE_5 [state x jmp-target]
+  (cond-> state
+    ;; compensate jump for automatic IP increase by the `defop` macro
+    (not (zero? x)) (assoc :ip (- jmp-target 3))))
+
+
+;; JUMP_IF_FALSE
+(defop CODE_6 [state x jmp-target]
+  (cond-> state
+    ;; compensate jump for automatic IP increase by the `defop` macro
+    (zero? x) (assoc :ip (- jmp-target 3))))
+
+
+;; LESS_THAN
+(defop CODE_7 [state a b *r]
+  (update state :mem assoc *r (if (< a b) 1 0)))
+
+
+;Opcode 8 is equals: if the first parameter is equal to the second parameter, it stores 1 in the position given by the third parameter. Otherwise, it stores 0.
+;; EQUALS
+(defop CODE_8 [state a b *r]
+  (update state :mem assoc *r (if (== a b) 1 0)))
+
+
 ;; HALT
-(defmethod execute-op 99
-  [state]
-  (assoc state :halt? true))
+(defop CODE_99 [state]
+  (-> (assoc state :halt? true)
+      (update :ip dec)))                                    ; compensate for automatic IP increase by `defop` macro
 
 
 (defn step-program

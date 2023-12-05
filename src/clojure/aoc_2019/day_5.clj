@@ -1,8 +1,6 @@
 (ns aoc-2019.day-5
   (:require [aoc-2019.intcode-interpreter :as intcode]
             [aoc-utils :as u]
-            [clojure.math :as math]
-            [clojure.string :as str]
             [criterium.core :as crit]))
 
 ; (set! *warn-on-reflection* true)
@@ -10,32 +8,25 @@
 
 ;; --- Day 5: Sunny with a Chance of Asteroids ---
 
-(def task-input (u/slurp-resource "inputs/aoc_2019/day-5.txt"))
+(def initial-memory (u/read-as-vector (u/slurp-resource "inputs/aoc_2019/day-5.txt")))
 
 
-
-(defn part-1
-  [input]
-  (-> (u/read-as-vector input)
-      (intcode/create-state)
-      (update :input conj 1)
+(defn run-diagnostic
+  [system-id]
+  (-> (intcode/create-state initial-memory)
+      (update :input conj system-id)
       (intcode/run-program)
-      :output))
-
-
-(defn part-2
-  [input]
-  )
+      :output
+      last))
 
 
 (comment
   ;; Part 1
-  (part-1 task-input)                                       ; => [0 0 0 0 0 0 0 0 0 11933517]
+  (run-diagnostic 1)                                        ; => 11933517
   (crit/quick-bench (part-1 task-input))
 
   ;; Part 2
-  (part-2 test-input)                                       ; =>
-  (part-2 task-input)                                       ; =>
+  (run-diagnostic 5)                                        ; => 10428568
   (crit/quick-bench (part-2 task-input))
 
   )
