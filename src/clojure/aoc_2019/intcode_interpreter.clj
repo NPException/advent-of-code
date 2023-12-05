@@ -1,6 +1,7 @@
 (ns aoc-2019.intcode-interpreter
   (:require [aoc-utils :as u]
-            [clojure.string :as str]))
+            [clojure.string :as str])
+  (:import (clojure.lang PersistentQueue)))
 
 (set! *warn-on-reflection* true)
 (set! *unchecked-math* :warn-on-boxed)
@@ -8,10 +9,12 @@
 
 (defn create-state
   [memory]
-  {:ip    0
-   :mem   memory
-   :steps 0
-   :halt? false})
+  {:ip     0
+   :mem    memory
+   :halt?  false
+   :input  PersistentQueue/EMPTY
+   :output []
+   :steps  0})
 
 
 (defn ^:private opcode
@@ -22,6 +25,9 @@
 
 
 (defn ^:private instruction
+  "Returns a 2 element vector:
+  [vector-of-all-integers-in-the-instruction
+   vector-of-parameter-modes]"
   [{:keys [mem ^long ip]} ^long instruction-length]
   (let [[^long code :as all] (subvec mem ip (+ ip instruction-length))
         modes (abs (quot code 100))]
@@ -80,25 +86,33 @@
 (defop CODE_1 [state a b *r]
   (update state :mem assoc *r (+ a b)))
 
+; extends to something like:
 #_(defmethod execute-op 1
   [state]
-  (let [[[_ ^long a ^long b ^long r] [a-mode b-mode]] (instruction state 4)
+  (let [[[_ a b r] [a-mode b-mode]] (instruction state 4)
         a (parameter state a a-mode)
         b (parameter state b b-mode)]
     (-> (update state :mem assoc r (+ a b))
         (update :ip + 4))))
 
+
 ;; MUL
 (defop CODE_2 [state a b *r]
   (update state :mem assoc *r (* a b)))
 
-#_(defmethod execute-op 2
-  [state]
-  (let [[[_ ^long a ^long b ^long r] [a-mode b-mode]] (instruction state 4)
-        a (parameter state a a-mode)
-        b (parameter state b b-mode)]
-    (-> (update state :mem assoc r (* a b))
-        (update :ip + 4))))
+
+;; INPUT : Opcode 3 takes a single integer as input and saves it to the position given by its only parameter.
+(defop CODE_3 [state *r]
+  (let [value (peek (:input state))]
+    (assert (some? value))
+    (-> (update state :mem assoc *r value)
+        (update :input pop))))
+
+
+;; OUTPUT : Opcode 4 outputs the value of its only parameter.
+(defop CODE_4 [state x]
+  (update state :output conj x))
+
 
 ;; HALT
 (defmethod execute-op 99
