@@ -52,9 +52,25 @@
          (apply min))))
 
 
+(defn expand-seeds
+  [seeds]
+  (->> (partition 2 seeds)
+       (mapv (fn [[start len]]
+               [start (+ start len)]))))
+
+(defn min-location
+  [mapping [start end]]
+  (->> (range start end)
+       (map mapping)
+       (apply min)))
+
 (defn part-2
   [input]
-  )
+  (let [{:keys [seeds mapping]} (parse-input input)
+        seeds (expand-seeds seeds)]
+    (->> seeds
+         (pmap #(min-location mapping %))
+         (apply min))))
 
 
 (comment
@@ -64,8 +80,8 @@
   (crit/quick-bench (part-1 task-input))
 
   ;; Part 2
-  (part-2 test-input)                                       ; =>
-  (part-2 task-input)                                       ; =>
+  (part-2 test-input)                                       ; => 46
+  (part-2 task-input)                                       ; => 104070862 (only took ~20 minutes xD)
   (crit/quick-bench (part-2 task-input))
 
   )
