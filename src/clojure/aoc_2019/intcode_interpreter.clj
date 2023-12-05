@@ -1,5 +1,6 @@
 (ns aoc-2019.intcode-interpreter
-  (:require [aoc-utils :as u]))
+  (:require [aoc-utils :as u]
+            [clojure.string :as str]))
 
 (set! *warn-on-reflection* true)
 (set! *unchecked-math* :warn-on-boxed)
@@ -15,17 +16,33 @@
 
 (defn ^:private opcode
   [{:keys [mem ip]}]
-  (nth mem ip))
+  (-> ^long (nth mem ip)
+      (rem 100)
+      (abs)))
+
 
 (defn ^:private instruction
   [{:keys [mem ^long ip]} ^long instruction-length]
-  (subvec mem ip (+ ip instruction-length)))
+  (let [[^long code :as all] (subvec mem ip (+ ip instruction-length))
+        modes (abs (quot code 100))]
+    [all
+     (loop [acc       []
+            modes     modes
+            remaining (dec instruction-length)]
+       (if (zero? remaining)
+         acc
+         (recur
+           (conj acc (rem modes 10))
+           (quot modes 10)
+           (dec remaining))))]))
 
 
-(defn ^:private memory-at
+(defn ^:private parameter
   ^long
-  [{:keys [mem]} ^long i]
-  (nth mem i))
+  [{:keys [mem]} ^long p ^long mode]
+  (case mode
+    0 (nth mem p)
+    1 p))
 
 
 (defmulti ^:private execute-op
@@ -33,44 +50,54 @@
   is currently at."
   opcode)
 
-; TODO Write a convenience macro `defop` to shorten the op implementation process.
-;      It that takes a vector of n+1 elements (the state, the op itself, and its parameters)
-;      as well as a function body.
-;      Parameter names that start with `*` will use the parameter as a pointer and bind
-;      the value at that address to the name.
-(comment
-  ; example for ADD op
-  (defop 1 [state _ *a *b r]
-    (update state :mem assoc r (+ *a *b)))
 
-  ; will expand to:
-  (defmethod execute-op 1
-    [state]
-    (let [[_ *a6593 *b6598 r] (instruction state 4)
-          *a (memory-at state *a6593)
-          *b (memory-at state *b6598)]
-      (-> (update state :mem assoc r (+ *a *b))
-          (update :ip + 4))))
-  ;
-  )
+(defn ^:private param-binding
+  [state-sym param-sym mode-sym]
+  (let [asterisked? (str/starts-with? (name param-sym) "*")]
+    [param-sym
+     (if asterisked?
+       param-sym
+       `(parameter ~state-sym ~param-sym ~mode-sym))]))
+
+; Convenience macro to shorten the op implementation process.
+; It takes the opcode, a vector of the state and the ops parameters, and a function body.
+; Parameter names that start with `*` will always be used as is.
+(defmacro defop
+  [op [state-sym & param-syms] & body]
+  (let [op (parse-long (re-find #"\d+" (name op)))
+        num-params (count param-syms)
+        instruction-size (inc num-params)
+        mode-syms (mapv #(gensym (str (name %) "_mode_")) param-syms)]
+    `(defmethod execute-op ~op
+       [~state-sym]
+       (-> (let [[[_# ~@param-syms] [~@mode-syms]] (instruction ~state-sym ~instruction-size)
+                 ~@(mapcat #(param-binding state-sym %1 %2) param-syms mode-syms)]
+             ~@body)
+           (update :ip + ~instruction-size)))))
+
 
 ;; ADD
-(defmethod execute-op 1
+(defop CODE_1 [state a b *r]
+  (update state :mem assoc *r (+ a b)))
+
+#_(defmethod execute-op 1
   [state]
-  (let [[_ *a *b r] (instruction state 4)
-        a (memory-at state *a)
-        b (memory-at state *b)]
+  (let [[[_ ^long a ^long b ^long r] [a-mode b-mode]] (instruction state 4)
+        a (parameter state a a-mode)
+        b (parameter state b b-mode)]
     (-> (update state :mem assoc r (+ a b))
         (update :ip + 4))))
 
 ;; MUL
-(defmethod execute-op 2
+(defop CODE_2 [state a b *r]
+  (update state :mem assoc *r (* a b)))
+
+#_(defmethod execute-op 2
   [state]
-  (let [[_ *a *b *r] (instruction state 4)
-        a (memory-at state *a)
-        b (memory-at state *b)
-        r (* a b)]
-    (-> (update state :mem assoc *r r)
+  (let [[[_ ^long a ^long b ^long r] [a-mode b-mode]] (instruction state 4)
+        a (parameter state a a-mode)
+        b (parameter state b b-mode)]
+    (-> (update state :mem assoc r (* a b))
         (update :ip + 4))))
 
 ;; HALT
@@ -89,5 +116,5 @@
   (loop [state state]
     (if (:halt? state)
       (do #_(u/debug "Steps executed: {state :steps}")
-          state)
+        state)
       (recur (step-program state)))))
