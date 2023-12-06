@@ -44,7 +44,10 @@
 
 (defn part-2
   [input]
-  )
+  (let [[times distances] (parse-input input)]
+    (count-winning-strats
+      (parse-long (apply str times))
+      (parse-long (apply str distances)))))
 
 
 (comment
@@ -54,8 +57,8 @@
   (crit/quick-bench (part-1 task-input))
 
   ;; Part 2
-  (part-2 test-input)                                       ; =>
-  (part-2 task-input)                                       ; =>
+  (part-2 test-input)                                       ; => 71503
+  (part-2 task-input)                                       ; => 45128024
   (crit/quick-bench (part-2 task-input))
 
   )
