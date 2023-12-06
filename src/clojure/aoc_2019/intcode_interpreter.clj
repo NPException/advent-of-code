@@ -8,12 +8,13 @@
 
 (defn create-state
   [memory]
-  {:ip     0
-   :mem    memory
-   :halt?  false
-   :input  []
-   :output []
-   :steps  0})
+  {:ip           0
+   :mem          memory
+   :halt?        false
+   :input        []
+   :needs-input? false
+   :output       []
+   :steps        0})
 
 
 (defn ^:private opcode
@@ -102,10 +103,14 @@
 
 ;; INPUT : Opcode 3 takes a single integer as input and saves it to the position given by its only parameter.
 (defop CODE_3 [state *r]
-  (let [input (:input state)]
-    (assert (seq input) "Expected input, but input was empty")
-    (-> (update state :mem assoc *r (first input))
-        (update :input subvec 1))))
+  (let [[value] (:input state)]
+    (if value
+      (-> (update state :mem assoc *r value)
+          (assoc :needs-input? false)
+          (update :input subvec 1))
+      ; pause execution to wait for input and compensate for automatic IP increase by the `defop` macro
+      (-> (assoc state :needs-input? true)
+          (update :ip - 2)))))
 
 
 ;; OUTPUT : Opcode 4 outputs the value of its only parameter.
@@ -152,7 +157,20 @@
 (defn run-program
   [state]
   (loop [state state]
-    (if (:halt? state)
-      (do #_(u/debug "Steps executed: {state :steps}")
-        state)
+    (if (or (:halt? state)
+            (:needs-input? state))
+      state
       (recur (step-program state)))))
+
+
+(defn push-input
+  [state input-value]
+  (update state :input conj input-value))
+
+(defn push-output
+  [state output-value]
+  (update state :output conj output-value))
+
+(defn last-output
+  [state]
+  (peek (:output state)))
