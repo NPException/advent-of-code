@@ -156,7 +156,7 @@
 
 (defn run-program
   [state]
-  (loop [state state]
+  (loop [state (step-program state)]
     (if (or (:halt? state)
             (:needs-input? state))
       state
