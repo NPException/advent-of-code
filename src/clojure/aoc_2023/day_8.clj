@@ -12,6 +12,8 @@
 (def task-input (u/slurp-resource "inputs/aoc_2023/day-8.txt"))
 
 (def test-input "LLR\n\nAAA = (BBB, BBB)\nBBB = (AAA, ZZZ)\nZZZ = (ZZZ, ZZZ)")
+(def test-input-2 "LR\n\n11A = (11B, XXX)\n11B = (XXX, 11Z)\n11Z = (11B, XXX)\n22A = (22B, XXX)\n22B = (22C, 22C)\n22C = (22Z, 22Z)\n22Z = (22B, 22B)\nXXX = (XXX, XXX)")
+
 
 (defn parse-input
   [input]
@@ -24,22 +26,31 @@
           (into {}))]))
 
 
+(defn solve
+  [directions lookup start end?]
+  (reduce
+    (fn [[node steps] direction]
+      (if (end? node)
+        (reduced steps)
+        [(get-in lookup [node direction])
+         (inc steps)]))
+    [start 0]
+    (cycle directions)))
+
+
 (defn part-1
   [input]
   (let [[directions lookup] (parse-input input)]
-    (reduce
-      (fn [[node steps] direction]
-        (if (= node "ZZZ")
-          (reduced steps)
-          [(get-in lookup [node direction])
-           (inc steps)]))
-      ["AAA" 0]
-      (cycle directions))))
+    (solve directions lookup "AAA" #(= % "ZZZ"))))
 
 
 (defn part-2
   [input]
-  )
+  (let [[directions lookup] (parse-input input)
+        start-nodes (filterv #(str/ends-with? % "A") (keys lookup))
+        end?        #(str/ends-with? % "Z")
+        node-steps  (mapv #(solve directions lookup % end?) start-nodes)]
+    (apply u/least-common-multiple node-steps)))
 
 
 (comment
@@ -49,8 +60,8 @@
   (crit/quick-bench (part-1 task-input))
 
   ;; Part 2
-  (part-2 test-input)                                       ; =>
-  (part-2 task-input)                                       ; =>
+  (part-2 test-input-2)                                     ; => 6
+  (part-2 task-input)                                       ; => 10151663816849
   (crit/quick-bench (part-2 task-input))
 
   )

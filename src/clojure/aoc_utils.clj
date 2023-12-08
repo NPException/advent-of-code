@@ -449,9 +449,9 @@
    (when (< ^long from-y ^long to-y)
      (lazy-cat
        (let [^long end-x to-x
-             ^long y from-y]
+             ^long y     from-y]
          (loop [^long x from-x
-                row (transient [])]
+                row     (transient [])]
            (if (= x end-x)
              (persistent! row)
              (recur (inc x) (conj! row [x y (nth-in grid [y x])])))))
@@ -522,19 +522,52 @@
   (-> x (Math/min max) (Math/max min)))
 
 
+(defn prime-factors
+  [^long n]
+  (loop [n       n
+         divisor 2
+         factors []]
+    (if (<= n 1)
+      factors
+      (if (= (rem n divisor) 0)
+        (recur
+          (quot n divisor)
+          divisor
+          (conj factors divisor))
+        (recur
+          n
+          (inc divisor)
+          factors)))))
+
+
+(defn least-common-multiple
+  [& nums]
+  (->> (mapv prime-factors nums)
+       (mapcat frequencies)
+       (reduce
+         (fn [acc [p ^long n]]
+           (if (> n ^long (get acc p 0))
+             (assoc acc p n)
+             acc))
+         {})
+       (mapv #(math/pow (key %) (val %)))
+       (apply *)
+       (long)))
+
+
 (defn ^:private graph-search
   [coll graph rf children-fn ctx start]
-  (loop [coll (conj coll start)
+  (loop [coll    (conj coll start)
          visited #{}
-         ctx ctx]
+         ctx     ctx]
     (cond
       (empty? coll) ctx
       (visited (peek coll)) (recur (pop coll) visited ctx)
-      :else (let [curr (peek coll)
-                  node (graph curr)
-                  coll (into (pop coll) (children-fn node))
+      :else (let [curr    (peek coll)
+                  node    (graph curr)
+                  coll    (into (pop coll) (children-fn node))
                   visited (conj visited curr)
-                  ctx (rf ctx curr node)]
+                  ctx     (rf ctx curr node)]
               (recur coll visited ctx)))))
 
 
