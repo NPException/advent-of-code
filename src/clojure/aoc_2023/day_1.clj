@@ -31,16 +31,33 @@
 
 ;;
 
-(def word-digits {"one" "1", "two" "2", "three" "3", "four" "4", "five" "5", "six" "6", "seven" "7", "eight" "8", "nine" "9"})
+(defn find-num
+  ^long [^String s ^long start-index update-index]
+  (loop [i start-index]
+    (cond
+      (or (.startsWith s "1" i) (.startsWith s "one" i)) 1
+      (or (.startsWith s "2" i) (.startsWith s "two" i)) 2
+      (or (.startsWith s "3" i) (.startsWith s "three" i)) 3
+      (or (.startsWith s "4" i) (.startsWith s "four" i)) 4
+      (or (.startsWith s "5" i) (.startsWith s "five" i)) 5
+      (or (.startsWith s "6" i) (.startsWith s "six" i)) 6
+      (or (.startsWith s "7" i) (.startsWith s "seven" i)) 7
+      (or (.startsWith s "8" i) (.startsWith s "eight" i)) 8
+      (or (.startsWith s "9" i) (.startsWith s "nine" i)) 9
+      :else (recur (long (update-index i))))))
 
-(def forward-regex #"\d|one|two|three|four|five|six|seven|eight|nine")
-(def reverse-regex #"enin|thgie|neves|xis|evif|ruof|eerht|owt|eno|\d")
+(defn find-num-l
+  ^long [s]
+  (find-num s 0 #(inc ^long %)))
+
+(defn find-num-r
+  ^long [s]
+  (find-num s (dec (count s)) #(dec ^long %)))
 
 (defn parse-digits-and-words
   [s]
-  (let [low (re-find forward-regex s)
-        high (str/reverse (re-find reverse-regex (str/reverse s)))]
-    (parse-long (str (word-digits low low) (word-digits high high)))))
+  (+ (* 10 (find-num-l s))
+     (find-num-r s)))
 
 (defn part-2
   [input]
