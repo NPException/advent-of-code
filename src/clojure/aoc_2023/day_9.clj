@@ -1,6 +1,5 @@
 (ns aoc-2023.day-9
   (:require [aoc-utils :as u]
-            [clojure.math :as math]
             [clojure.string :as str]
             [criterium.core :as crit]))
 
@@ -23,25 +22,27 @@
   (- b a))
 
 (defn find-next-number
-  [nums]
+  [element-fn rf nums]
   (->> nums
        (iterate #(mapv difference (partition 2 1 %)))
        (take-while #(not (every? zero? %)))
-       (mapv peek)
+       (mapv element-fn)
        rseq
-       (reduce + 0)))
+       (reduce #(rf %2 %1) 0)))
 
 
 (defn part-1
   [input]
   (->> (parse-input input)
-       (mapv find-next-number)
+       (mapv #(find-next-number peek + %))
        (apply +)))
 
 
 (defn part-2
   [input]
-  )
+  (->> (parse-input input)
+       (mapv #(find-next-number first - %))
+       (apply +)))
 
 
 (comment
@@ -51,8 +52,8 @@
   (crit/quick-bench (part-1 task-input))
 
   ;; Part 2
-  (part-2 test-input)                                       ; =>
-  (part-2 task-input)                                       ; =>
+  (part-2 test-input)                                       ; => 2
+  (part-2 task-input)                                       ; => 1031
   (crit/quick-bench (part-2 task-input))
 
   )
