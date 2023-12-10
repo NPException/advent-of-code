@@ -438,6 +438,13 @@
   (apply mapv vector grid))
 
 
+(defn grid-element
+  "Returns a grid element via `nth-in` in the form of [x y value]."
+  ([grid x y]
+   [x y (nth-in grid [y x])])
+  ([grid x y not-found]
+   [x y (nth-in grid [y x] not-found)]))
+
 (defn grid-elements
   "Returns a lazy sequence of all elements and their coordinates in a grid. Each row is retrieved eagerly.
   Returned are tuples of [x y element]"
@@ -454,7 +461,7 @@
                 row     (transient [])]
            (if (= x end-x)
              (persistent! row)
-             (recur (inc x) (conj! row [x y (nth-in grid [y x])])))))
+             (recur (inc x) (conj! row (grid-element grid x y))))))
        (grid-elements grid from-x to-x (inc ^long from-y) to-y)))))
 
 
