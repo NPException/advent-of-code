@@ -1,6 +1,5 @@
 (ns aoc-2023.day-10
   (:require [aoc-utils :as u]
-            [clojure.math :as math]
             [clojure.string :as str]
             [criterium.core :as crit]))
 
@@ -12,6 +11,8 @@
 (def task-input (u/slurp-resource "inputs/aoc_2023/day-10.txt"))
 
 (def test-input "7-F7-\n.FJ|7\nSJLL7\n|F--J\nLJ.LJ")
+
+(def test-input-2 "FF7FSF7F7F7F7F7F---7\nL|LJ||||||||||||F--J\nFL-7LJLJ||||||LJL-77\nF--JF--7||LJLJ7F7FJ-\nL---JF-JLJ.||-FJLJJ7\n|F|F-JF---7F7-L7L|7|\n|FFJF7L7F-JF7|JL---7\n7-L-JL7||F7|L7F-7F7|\nL.L7LFJ|||||FJL7||LJ\nL7JLJL-JLJLJL--JLJ.L")
 
 ;| is a vertical pipe connecting north and south.
 ;- is a horizontal pipe connecting east and west.
@@ -90,15 +91,90 @@
 
 (defn part-1
   [input]
-  (let [grid       (parse-input input)]
+  (let [grid (parse-input input)]
     (-> (find-path grid)
         (count)
         (/ 2))))
 
 
+(defn direction
+  [[x y] [nx ny]]
+  (case [(- nx x) (- ny y)]
+    [0 -1] :up
+    [1 0] :right
+    [0 1] :down
+    [-1 0] :left))
+
+
+; replaces the "S" with it's equivalent pipe character
+(defn replace-start
+  [[[x y :as start] & more :as path]]
+  (let [replacement (case #{(direction start (peek path))
+                            (direction start (first more))}
+                      #{:up :down} \┃
+                      #{:left :right} \━
+                      #{:up :right} \┗
+                      #{:up :left} \┛
+                      #{:down :left} \┓
+                      #{:down :right} \┏)]
+    (apply vector [x y replacement] more)))
+
+; ┏━━━━━━━┓
+; ┃   ┏━┓ ┃
+; ┃I┏━┛ ┃ ┃
+; ┗━┛   ┗━┛
+; traces towards the right of the grid, and counts how often the path is crossed
+(defn count-intersections
+  [width on-path start-x y]
+  (loop [n              0
+         x              start-x
+         crossing-start nil]
+    (if (= x width)
+      n
+      (if-let [pipe (on-path [x y])]
+        (case pipe
+          ; up/down intersection
+          \┃ (recur (inc n) (inc x) nil)
+          ; tangent
+          \━ (recur n (inc x) crossing-start)
+          ; entry corners
+          \┗ (recur n (inc x) :up)
+          \┏ (recur n (inc x) :down)
+          ; exit corners
+          \┛ (recur
+               (if (= crossing-start :up) n (inc n))
+               (inc x)
+               nil)
+          \┓ (recur
+               (if (= crossing-start :down) n (inc n))
+               (inc x)
+               nil))
+        ; not on path
+        (recur n (inc x) nil)))))
+
+
+(defn inside-path?
+  [width on-path [x y]]
+  ; must not lie directly on path
+  (when-not (on-path [x y])
+    ; an odd number of polygon intersections means that the point is inside
+    (odd? (count-intersections width on-path (inc x) y))))
+
+
 (defn part-2
   [input]
-  )
+  (let [grid     (parse-input input)
+        width    (count (first grid))
+        elements (u/grid-elements grid)
+        path     (replace-start (find-path grid))
+        ; map of coordinate -> pipe on path
+        on-path  (->> path
+                      (map (fn [[x y e]]
+                             [[x y] e]))
+                      (into {}))]
+    (->> elements
+         (filter #(inside-path? width on-path %))
+         (count))))
 
 
 (comment
@@ -108,8 +184,8 @@
   (crit/quick-bench (part-1 task-input))
 
   ;; Part 2
-  (part-2 test-input)                                       ; =>
-  (part-2 task-input)                                       ; =>
+  (part-2 test-input-2)                                     ; => 10
+  (part-2 task-input)                                       ; => 451
   (crit/quick-bench (part-2 task-input))
 
   )
