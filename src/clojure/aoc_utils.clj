@@ -432,6 +432,36 @@
       coll)))
 
 
+(defn starts-with?
+  "Generic version of String/startsWith. Returns true if
+  collection `col` starts with collection `sub`, optionally starting to check from an offset in `col`.
+  Note that `col` and `sub` must be supported by `nth` (and should provide constant time lookup)."
+  ([col sub] (starts-with? col sub 0))
+  ([col sub ^long offset]
+   (if (neg? offset)
+     false
+     (let [len-a (count col)
+           len-b (count sub)]
+       (loop [i 0]
+         (if (>= i len-b)
+           ; we ran out of `sub`, and everything matched so far.
+           true
+           (if (>= (+ i offset) len-a)
+             ; we ran out of `col`, but still have `sub` left
+             false
+             (if (= (nth col (+ i offset))
+                    (nth sub i))
+               (recur (inc i))
+               ; an element didn't match, so the result is false
+               false))))))))
+
+
+(defn ends-with?
+  "Generic version of String/startsWith. Returns true if collection `col` ends with collection `sub`."
+  [col sub]
+  (starts-with? col sub (- (count col) (count sub))))
+
+
 (defn transpose
   "Takes a 2D grid (sequence of same-sized rows) flips it over its diagonal; i.e. it switches rows and columns. (eager)"
   [grid]
