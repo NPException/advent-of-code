@@ -33,15 +33,18 @@
 (defn find-mirror
   "Finds the mirror axis, and returns a vector of [rows-above-mirror columns-left-of-mirror].
   If the mirror is vertical, rows will be 0. If the mirror is horizontal, columns will be 0."
-  [rows]
-  [0 0]
-  (let [mi (or (mirror-index rows) 0)]
-    (if (> mi 0)
-      [mi 0]
-      [0 (->> (mapv str/reverse rows)
-              (u/transpose)
-              (mapv #(apply str %))
-              (mirror-index))])))
+  ([rows]
+   (find-mirror rows [0 0]))
+  ([rows [r c :as _forbidden]]
+   (let [mi (mirror-index rows)]
+     (if (and mi (not= mi r))
+       [mi 0]
+       (let [mi (->> (mapv str/reverse rows)
+                     (u/transpose)
+                     (mapv #(apply str %))
+                     (mirror-index))]
+         (when (and mi (not= mi c))
+           [0 mi]))))))
 
 
 (defn part-1
@@ -54,9 +57,26 @@
        (apply +)))
 
 
+(defn find-smudged-mirror
+  [rows]
+  (let [smudged   (find-mirror rows)
+        char-rows (mapv vec rows)]
+    (->> (for [y (range (count char-rows))
+               x (range (count (first char-rows)))]
+           (->> (update-in char-rows [y x] {\. \#, \# \.})
+                (mapv #(apply str %))))
+         (keep #(find-mirror % smudged))
+         (first))))
+
+
 (defn part-2
   [input]
-  )
+  (->> (str/split input #"\n\n")
+       (mapv str/split-lines)
+       (pmap find-smudged-mirror)
+       (mapv (fn [[columns rows]]
+               (+ columns (* 100 rows))))
+       (apply +)))
 
 
 (comment
@@ -66,8 +86,8 @@
   (crit/quick-bench (part-1 task-input))
 
   ;; Part 2
-  (part-2 test-input)                                       ; =>
-  (part-2 task-input)                                       ; =>
+  (part-2 test-input)                                       ; => 400
+  (part-2 task-input)                                       ; FIXME => crashes. if I filter out nil results, its 29059 and that's too low ...
   (crit/quick-bench (part-2 task-input))
 
   )
