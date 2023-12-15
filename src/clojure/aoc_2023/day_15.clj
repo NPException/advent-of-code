@@ -37,9 +37,47 @@
        (apply +)))
 
 
+;; PART 2
+
+(defn remove-lens
+  [box [label _focal-length]]
+  (if-let [i (u/index-of #(= label (first %)) box)]
+    (vec (concat (subvec box 0 i) (subvec box (inc i))))
+    box))
+
+(defn replace-lens
+  [box [label _focal-length :as lens]]
+  (if-let [i (u/index-of #(= label (first %)) box)]
+    (assoc box i lens)
+    (conj box lens)))
+
+(defn HASHMAP
+  [boxes op]
+  (let [[label focal-length :as lens] (str/split op #"[=-]")]
+    (update boxes (HASH label)
+      (if focal-length
+        replace-lens
+        remove-lens)
+      lens)))
+
+
+(defn focusing-power
+  [box-index box]
+  (->> box
+       (map-indexed (fn [lens-index [_label focal-length]]
+                      (* (inc box-index)
+                         (inc lens-index)
+                         (parse-long focal-length))))
+       (apply +)))
+
+
 (defn part-2
   [input]
-  )
+  (let [ops (str/split input #",")
+        boxes (vec (repeat 256 []))]
+    (->> (reduce HASHMAP boxes ops)
+         (map-indexed focusing-power)
+         (apply +))))
 
 
 (comment
@@ -49,8 +87,8 @@
   (crit/quick-bench (part-1 task-input))
 
   ;; Part 2
-  (part-2 test-input)                                       ; =>
-  (part-2 task-input)                                       ; =>
+  (part-2 test-input)                                       ; => 145
+  (part-2 task-input)                                       ; => 279470
   (crit/quick-bench (part-2 task-input))
 
   )
