@@ -72,23 +72,28 @@
   (u/nth-in grid [y x] nil))
 
 
+(defn count-energized
+  [grid start-beam]
+  (loop [energized #{}
+         [beam & unprocessed] [start-beam]
+         seen      #{}]
+    (cond
+      (nil? beam) (count energized)
+      (seen beam) (recur energized unprocessed seen)
+      :else (if-let [tile (tile-at grid beam)]
+              (recur
+                (conj energized (first beam))
+                (into unprocessed (beam-step tile beam))
+                (conj seen beam))
+              ; out of bounds
+              (recur energized unprocessed (conj seen beam))))))
+
+
 (defn part-1
   [input]
-  (let [grid (str/split-lines input)
-        start [[0 0] [1 0]]]
-    (loop [energized #{}
-           [beam & unprocessed] [start]
-           seen #{}]
-      (cond
-        (nil? beam) (count energized)
-        (seen beam) (recur energized unprocessed seen)
-        :else (if-let [tile (tile-at grid beam)]
-                (recur
-                  (conj energized (first beam))
-                  (into unprocessed (beam-step tile beam))
-                  (conj seen beam))
-                ; out of bounds
-                (recur energized unprocessed (conj seen beam)))))))
+  (count-energized
+    (str/split-lines input)
+    [[0 0] [1 0]]))
 
 
 (defn part-2
