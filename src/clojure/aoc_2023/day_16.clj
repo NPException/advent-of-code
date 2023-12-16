@@ -98,7 +98,25 @@
 
 (defn part-2
   [input]
-  )
+  (let [grid           (str/split-lines input)
+        width          (count (first grid))
+        height         (count grid)
+        starting-beams (-> []
+                           ; top row heading down
+                           (into (->> (range width)
+                                      (map #(do [[% 0] [0 1]]))))
+                           ; bottom row heading up
+                           (into (->> (range width)
+                                      (map #(do [[% (dec height)] [0 -1]]))))
+                           ; left column heading right
+                           (into (->> (range height)
+                                      (map #(do [[0 %] [1 0]]))))
+                           ; right column heading left
+                           (into (->> (range height)
+                                      (map #(do [[(dec width) %] [-1 0]])))))]
+    (->> starting-beams
+         (pmap #(count-energized grid %))
+         (apply max))))
 
 
 (comment
@@ -108,8 +126,8 @@
   (crit/quick-bench (part-1 task-input))
 
   ;; Part 2
-  (part-2 test-input)                                       ; =>
-  (part-2 task-input)                                       ; =>
+  (part-2 test-input)                                       ; => 51
+  (part-2 task-input)                                       ; => 7513
   (crit/quick-bench (part-2 task-input))
 
   )
