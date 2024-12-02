@@ -31,7 +31,7 @@
   "Takes an input string and an alternating number of parsing functions and regular expressions.
   The string will be split using the regular expressions, and the resulting sections are given as
   arguments to the respective parsing functions. If a keyword or nil literal is given as a parsing function,
-  it's respective argument is ommited from the output."
+  it's respective argument is omitted from the output."
   [input & parse-fns-and-split-regexes]
   ;; arg validation
   (when (even? (count parse-fns-and-split-regexes))
@@ -430,6 +430,23 @@
           (if (nil? r) acc (conj! acc r))))
       (transient [])
       coll)))
+
+
+(defn condense
+  "Allows to condense consecutive elements within a collection.
+  Takes a 2-arity predicate to determine if 2 elements should be combined,
+  and a 2-arity combiner function to convert those 2 elements into one.
+  The resulting element will replace the 2 original elements, and is used as
+  the `previous` element for the next predicate/combiner call."
+  [pred combiner col]
+  (reduce
+    (fn [acc current]
+      (let [previous (peek acc)]
+        (if (pred previous current)
+          (assoc acc (dec (count acc)) (combiner previous current))
+          (conj acc current))))
+    (vec (take 1 col))
+    (drop 1 col)))
 
 
 (defn starts-with?

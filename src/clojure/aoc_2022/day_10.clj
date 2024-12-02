@@ -43,14 +43,24 @@
     `(let [~signal-strength (LongBox. 0)]
        (->> 1
             ~@(->> program
+                   ; add cycle counter
                    (map-indexed (fn [^long i op] [(inc i) op]))
+                   ; splice in signal strength updates
                    (mapcat
                      (fn [[^long cycle op]]
                        (if (or (= cycle 20)
                                (and (> cycle 20)
                                     (= 0 (mod (- cycle 20) 40))))
                          [`(update-signal-strength ~signal-strength ~cycle) op]
-                         [op])))))
+                         [op])))
+                   ; remove noops
+                   (remove #(= % `(noop)))
+                   ; condense +
+                   (u/condense
+                     (fn [[a] [b]]
+                       (and (= a `+) (= b `+)))
+                     (fn [[_ ^long num-a] [_ ^long num-b]]
+                       `(+ ~(+ num-a num-b))))))
        (.get ~signal-strength))))
 
 
@@ -81,7 +91,9 @@
                    (map-indexed (fn [^long i op] [(inc i) op]))
                    (mapcat
                      (fn [[cycle op]]
-                       [`(record ~grid ~cycle) op]))))
+                       [`(record ~grid ~cycle) op]))
+                   ; remove noops
+                   (remove #(= % `(noop)))))
        (into []
          (comp (u/partitioning 40)
                (map str/join))
