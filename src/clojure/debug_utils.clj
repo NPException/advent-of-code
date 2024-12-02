@@ -1,7 +1,9 @@
 (ns debug-utils
-  (:require [clojure.main :as main])
+  (:require [clojure.edn :as edn]
+            [clojure.main :as main]
+            [clojure.string :as str])
   (:import (java.awt BorderLayout Dimension)
-           (javax.swing JFrame JPanel JProgressBar SwingUtilities UIManager)))
+           (javax.swing JFrame JPanel JProgressBar UIManager)))
 
 (set! *warn-on-reflection* true)
 (set! *unchecked-math* :warn-on-boxed)
@@ -42,6 +44,36 @@
   x)
 
 
+
+(defn parse-debug-value
+  [[_ sym-name entries]]
+  (if (nil? entries)
+    (symbol sym-name)
+    (let [entries (mapv
+                    #(list 'quote %)
+                    (edn/read-string
+                      (if (str/starts-with? entries "[")
+                        entries
+                        (str "[" entries "]"))))]
+      `(get-in ~(symbol sym-name) ~entries))))
+
+(defmacro debug
+  "println with automatically resolving placeholders.
+  {x} - Resolves to the current binding of x.
+  {x k} - Resolves the key 'k' in the associative data structure x.
+          The key is taken literally. To check for a key in form of
+          a keyword, symbol, or string, use :k, k, or \"k\" respectively.
+  {x [a b]} - Similar to {x k}, but resolves via 'get-in'."
+  [^String s]
+  (let [placeholders  (re-seq #"\{([^{} ,]+)(?: ([^{} ,]+|\[(?:[^{} ,]+[, ]*)+\]))?\}" s)
+        format-string (reduce #(str/replace-first %1 (first %2) "%s") s placeholders)
+        values        (->> placeholders
+                           (map parse-debug-value)
+                           (map #(list 'clojure.core/pr-str %)))]
+    `(println (format ~format-string ~@values))))
+
+
+
 ;; set system look and feel when the namespace is loaded
 (UIManager/setLookAndFeel (UIManager/getSystemLookAndFeelClassName))
 
@@ -53,7 +85,8 @@
 (defn spawn-progress-bar
   "Spawns a progress bar with the given name as the window title.
   `min` and `max` are the 0% and 100% integer values.
-  Returns a function with the a current value to update the progress. That function will return the value."
+  Returns a function which takes the current value to update the progress.
+  That function will return the value it was given."
   (^ProgressBar [^String name min max]
    (spawn-progress-bar name min max 1))
   (^ProgressBar [^String name ^long min ^long max ^long update-interval]

@@ -747,35 +747,6 @@
 
 
 
-(defn parse-debug-value
-  [[_ sym-name entries]]
-  (if (nil? entries)
-    (symbol sym-name)
-    (let [entries (mapv
-                    #(list 'quote %)
-                    (edn/read-string
-                      (if (str/starts-with? entries "[")
-                        entries
-                        (str "[" entries "]"))))]
-      `(get-in ~(symbol sym-name) ~entries))))
-
-(defmacro debug
-  "println with automatically resolving placeholders.
-  {x} - Resolves to the current binding of x.
-  {x k} - Resolves the key 'k' in the associative datastructure x.
-          The key is taken literally. To check for a key in form of
-          a keyword, symbol, or string, use :k, k, or \"k\" respectively.
-  {x [a b]} - Similar to {x k}, but resolves via 'get-in'."
-  [^String s]
-  (let [placeholders  (re-seq #"\{([^{} ,]+)(?: ([^{} ,]+|\[(?:[^{} ,]+[, ]*)+\]))?\}" s)
-        format-string (reduce #(str/replace-first %1 (first %2) "%s") s placeholders)
-        values        (->> placeholders
-                           (map parse-debug-value)
-                           (map #(list 'clojure.core/pr-str %)))]
-    `(println (format ~format-string ~@values))))
-
-
-
 (def ^:private ^:dynamic *aoc-session-id* nil)
 
 (defn ^:private load-session-id
