@@ -734,10 +734,14 @@
   "Combines 2 predicates. The resulting predicate returns true when both predicates return the same result."
   [p-pred q-pred]
   (fn
-    ([] (= (p-pred) (q-pred)))
-    ([a] (= (p-pred a) (q-pred a)))
-    ([a b] (= (p-pred a b) (q-pred a b)))
-    ([a b c] (= (p-pred a b c) (q-pred a b c)))
+    ([] (= (boolean (p-pred))
+           (boolean (q-pred))))
+    ([a] (= (boolean (p-pred a))
+            (boolean (q-pred a))))
+    ([a b] (= (boolean (p-pred a b))
+              (boolean (q-pred a b))))
+    ([a b c] (= (boolean (p-pred a b c))
+                (boolean (q-pred a b c))))
     ([a b c & more] (= (apply p-pred a b c more)
                        (apply q-pred a b c more)))))
 
