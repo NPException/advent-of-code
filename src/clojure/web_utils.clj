@@ -2,11 +2,8 @@
   ; Namespace copied and modified from hcscraper project
   (:require [hickory.core :as hickory]
             [clojure.java.io :as io]
-            [org.httpkit.sni-client :as sni-client]
             [org.httpkit.client :as http])
   (:import (java.util Map)))
-
-(alter-var-root #'org.httpkit.client/*default-client* (fn [_] sni-client/default-client))
 
 (def tag
   "returns the tag keyword of the hiccup element"
