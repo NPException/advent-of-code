@@ -14,14 +14,6 @@
 (def test-input "MMMSXXMASM\nMSAMXMSMSA\nAMXSXMAAMM\nMSAMASMSMX\nXMASAMXAMM\nXXAMMXXAMA\nSMSMSASXSS\nSAXAMASAAA\nMAMMMXMMMM\nMXMXAXMASX")
 
 
-; offsets for the words XMAS and SAMX
-(def offsets
-  [[[0 0] [1 0] [2 0] [3 0]]                                ; horizontal
-   [[0 0] [0 1] [0 2] [0 3]]                                ; vertical
-   [[0 0] [1 1] [2 2] [3 3]]                                ; diagonal down
-   [[0 3] [1 2] [2 1] [3 0]]])                              ; diagonal up
-
-
 (defmacro coordinates
   [x y offsets]
   (mapv (fn [[ox oy]]
@@ -60,9 +52,33 @@
          (u/count-matching #(xmas? grid %))))) ; diagonal up
 
 
+;; Part 2
+
+(defn x-mas? [grid x y]
+  (let [middle (u/nth-in grid [(inc y) (inc x)])]
+    (when (= middle \A)
+      (let [top-left (u/nth-in grid [y x])
+            top-right (u/nth-in grid [y (+ x 2)])
+            bot-left (u/nth-in grid [(+ y 2) x])
+            bot-right (u/nth-in grid [(+ y 2) (+ x 2)])]
+        (and (or (and (= top-left \M) (= bot-right \S))
+                 (and (= top-left \S) (= bot-right \M)))
+             (or (and (= top-right \M) (= bot-left \S))
+                 (and (= top-right \S) (= bot-left \M))))))))
+
+
 (defn part-2
   [input]
-  )
+  (let [grid (str/split-lines input)
+        width (count (first grid))
+        max-x (- width 3)
+        height (count grid)
+        max-y (- height 3)]
+    (->> (for [x (range 0 width)
+               y (range 0 height)
+               :when (and (<= x max-x) (<= y max-y))]
+           (x-mas? grid x y))
+         (u/count-matching true?))))
 
 
 (comment
@@ -72,8 +88,8 @@
   (crit/quick-bench (part-1 task-input))
 
   ;; Part 2
-  (part-2 test-input)                                       ; =>
-  (part-2 task-input)                                       ; =>
+  (part-2 test-input)                                       ; => 9
+  (part-2 task-input)                                       ; => 1910
   (crit/quick-bench (part-2 task-input))
 
   )
