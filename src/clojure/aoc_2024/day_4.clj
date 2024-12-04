@@ -46,10 +46,10 @@
            [(if horizontal? (coordinates x y [[0 0] [1 0] [2 0] [3 0]])) ; horizontal
             (if vertical? (coordinates x y [[0 0] [0 1] [0 2] [0 3]])) ; vertical
             (if diagonal? (coordinates x y [[0 0] [1 1] [2 2] [3 3]])) ; diagonal down
-            (if diagonal? (coordinates x y [[0 3] [1 2] [2 1] [3 0]]))])
+            (if diagonal? (coordinates x y [[0 3] [1 2] [2 1] [3 0]]))]) ; diagonal up
          (apply concat)
          (filter some?)
-         (u/count-matching #(xmas? grid %))))) ; diagonal up
+         (u/count-matching #(xmas? grid %)))))
 
 
 ;; Part 2
