@@ -1,6 +1,5 @@
 (ns aoc-2024.day-4
   (:require [aoc-utils :as u]
-            [clojure.math :as math]
             [clojure.string :as str]
             [criterium.core :as crit]))
 
