@@ -116,7 +116,7 @@
 
 
 (defmacro nth-in
-  "Macro to do highly efficient lookup in nested vectors."
+  "Macro to do highly efficient lookup in nested vectors. `is` must be a list or vector literal."
   ([v is]
    `(-> ~v ~@(map (fn [i] (list `nth i)) is)))
   ([v is not-found]
