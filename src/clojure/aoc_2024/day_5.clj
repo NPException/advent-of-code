@@ -45,14 +45,22 @@
   (let [[rules updates] (parse-input input)
         rules-map (rules->map rules)]
     (->> updates
-         (filter #(correct-order? rules-map %))
-         (map #(nth % (quot (count %) 2)))
-         (apply +))))
+         (filter #(correct-order? rules-map %))             ; remove incorrect updates
+         (map #(nth % (quot (count %) 2)))                  ; get middle values
+         (apply +))))                                       ; sum
 
 
 (defn part-2
   [input]
-  )
+  (let [[rules updates] (parse-input input)
+        rules-map (rules->map rules)
+        before? (fn [a b]
+                  (contains? (rules-map a) b))]
+    (->> updates
+         (remove #(correct-order? rules-map %))             ; remove correct updates
+         (map #(vec (sort before? %)))                      ; re-order incorrect updates
+         (map #(nth % (quot (count %) 2)))                  ; get middle values
+         (apply +))))                                       ; sum
 
 
 (comment
@@ -62,8 +70,8 @@
   (crit/quick-bench (part-1 task-input))
 
   ;; Part 2
-  (part-2 test-input)                                       ; =>
-  (part-2 task-input)                                       ; =>
+  (part-2 test-input)                                       ; => 123
+  (part-2 task-input)                                       ; => 6305
   (crit/quick-bench (part-2 task-input))
 
   )
