@@ -511,6 +511,18 @@
              (recur (inc x) (conj! row (grid-element grid x y))))))
        (grid-elements grid from-x to-x (inc ^long from-y) to-y)))))
 
+(defn find-grid-elements
+  "Returns a sequence of grid elements that match the given predicate.
+  Grid elements are in the form of [x y value] and will be passed as is to the predicate."
+  [grid pred]
+  (let [height (count grid)
+        width  (count (first grid))]
+    (for [x (range 0 width)
+          y (range 0 height)
+          :let [element (grid-element grid x y)]
+          :when (pred element)]
+      element)))
+
 
 (defmacro fn->
   "Threads the expr through the forms.
