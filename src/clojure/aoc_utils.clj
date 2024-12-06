@@ -517,8 +517,8 @@
   [grid pred]
   (let [height (count grid)
         width  (count (first grid))]
-    (for [x (range 0 width)
-          y (range 0 height)
+    (for [y (range 0 height)
+          x (range 0 width)
           :let [element (grid-element grid x y)]
           :when (pred element)]
       element)))
