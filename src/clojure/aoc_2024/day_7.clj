@@ -1,6 +1,5 @@
 (ns aoc-2024.day-7
   (:require [aoc-utils :as u]
-            [clojure.math :as math]
             [clojure.string :as str]
             [criterium.core :as crit]))
 
@@ -20,10 +19,16 @@
        (mapv u/read-as-vector)))
 
 
+(defn ||
+  "combines the digits from its left and right inputs into a single number"
+  [a b]
+  (parse-long (str a b)))
+
+
 (defn valid-number?
-  ([[goal & nums]]
-   (valid-number? goal (first nums) (next nums)))
-  ([goal sum [next-num & more-nums]]
+  ([ops [goal & nums]]
+   (valid-number? ops goal (first nums) (next nums)))
+  ([ops goal sum [next-num & more-nums]]
    ; no more numbers left, compare with goal
    (if (nil? next-num)
      (= goal sum)
@@ -31,22 +36,25 @@
      (if (> sum goal)
        false
        ; branch out
-       (or (valid-number? goal (* sum next-num) more-nums)
-           (valid-number? goal (+ sum next-num) more-nums))))))
+       (->> ops (some #(valid-number? ops goal (% sum next-num) more-nums)))))))
 
 
-
-(defn part-1
-  [input]
+(defn solve
+  [input ops]
   (->> (parse-input input)
-       (filter valid-number?)
+       (filter #(valid-number? ops %))
        (map first)
        (apply +)))
 
 
+(defn part-1
+  [input]
+  (solve input [* +]))
+
+
 (defn part-2
   [input]
-  )
+  (solve input [|| * +]))
 
 
 (comment
@@ -56,8 +64,8 @@
   (crit/quick-bench (part-1 task-input))
 
   ;; Part 2
-  (part-2 test-input)                                       ; =>
-  (part-2 task-input)                                       ; =>
+  (part-2 test-input)                                       ; => 11387
+  (part-2 task-input)                                       ; => 500335179214836
   (crit/quick-bench (part-2 task-input))
 
   )

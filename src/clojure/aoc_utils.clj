@@ -587,6 +587,12 @@
   [^double x ^double min ^double max]
   (-> x (Math/min max) (Math/max min)))
 
+(defn num-digits
+  "returns the number of digits in the decimal representation of the given number"
+  ^long
+  [^long x]
+  (inc (long (math/log10 x))))
+
 
 (defn prime-factors
   [^long n]
