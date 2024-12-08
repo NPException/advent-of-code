@@ -21,7 +21,7 @@
          (fn [acc [x y element]]
            (update-in acc [y x] #(if (= % \.) element %)))
          grid)
-       (mapv #(apply str %) grid)
+       (mapv #(apply str %))
        (str/join \newline)
        (println)))
 
@@ -38,6 +38,27 @@
        (group-by peek)))
 
 
+(defn in-bounds?
+  [width height [x y]]
+  (and (<= 0 x) (< x width)
+       (<= 0 y) (< y height)))
+
+
+(defn solve
+  [input find-antinodes-fn]
+  (let [grid (parse-grid input)
+        width (count (first grid))
+        height (count grid)
+        antennas (find-antennas grid)
+        antinodes (->> (vals antennas)
+                       (mapcat #(find-antinodes-fn width height %))
+                       (set))]
+    #_(print-with-antinodes grid antinodes)
+    (count antinodes)))
+
+
+;; PART 1 ;;
+
 (defn antinode-pair
   [[x1 y1] [x2 y2]]
   (let [dx (- x2 x1)
@@ -45,75 +66,61 @@
     [[(- x1 dx) (- y1 dy) \#]
      [(+ x2 dx) (+ y2 dy) \#]]))
 
-(defn find-antinodes
-  [antennas]
+(defn find-antinodes-part-1
+  [width height antennas]
   (let [length (count antennas)]
     (apply concat
       (for [i (range 0 (dec length))]
         (->> (range (inc i) length)
-             (mapcat #(antinode-pair (nth antennas i) (nth antennas %))))))))
-
-
-(defn in-bounds?
-  [width height [x y]]
-  (and (<= 0 x) (< x width)
-       (<= 0 y) (< y height)))
-
+             (mapcat #(antinode-pair (nth antennas i) (nth antennas %)))
+             (filterv #(in-bounds? width height %)))))))
 
 (defn part-1
   [input]
-  (let [grid (parse-grid input)
-        width (count (first grid))
-        height (count grid)
-        antennas (find-antennas grid)
-        antinodes (->> (vals antennas)
-                       (mapcat find-antinodes)
-                       (set)
-                       (filterv #(in-bounds? width height %)))]
-    #_(print-with-antinodes grid antinodes)
-    (count antinodes)))
+  (solve input find-antinodes-part-1))
+
+
+;; PART 2 ;;
+
+(defn antinodes-on-line
+  [width height [[x1 y1] [x2 y2]]]
+  (let [dx (- x2 x1)
+        dy (- y2 y1)
+        left (->> [x1 y1 \#]
+                  (iterate (fn [[x y]]
+                             [(- x dx) (- y dy) \#]))
+                  (take-while #(in-bounds? width height %)))
+        right (->> [x2 y2 \#]
+                   (iterate (fn [[x y]]
+                              [(+ x dx) (+ y dy) \#]))
+                   (take-while #(in-bounds? width height %)))]
+    (concat left right)))
+
+
+(defn find-antinodes-part-2
+  [width height antennas]
+  (let [length (count antennas)
+        antenna-pairs (apply concat
+                        (for [i (range 0 (dec length))]
+                          (->> (range (inc i) length)
+                               (mapv #(vector (nth antennas i) (nth antennas %))))))]
+    (mapcat #(antinodes-on-line width height %) antenna-pairs)))
 
 
 (defn part-2
   [input]
-  )
+  (solve input find-antinodes-part-2))
 
 
 (comment
   ;; Part 1
   (part-1 test-input)                                       ; => 14
-  (part-1 task-input)                                       ; =>
+  (part-1 task-input)                                       ; => 220
   (crit/quick-bench (part-1 task-input))
 
   ;; Part 2
-  (part-2 test-input)                                       ; =>
-  (part-2 task-input)                                       ; =>
+  (part-2 test-input)                                       ; => 34
+  (part-2 task-input)                                       ; => 813
   (crit/quick-bench (part-2 task-input))
 
   )
-
-;......#....#
-;...#....0...
-;....#0....#.
-;..#....0....
-;....0....#..
-;.#....A.....
-;...#........
-;#......#....
-;........A...
-;.........A..
-;..........#.
-;..........#.
-
-;......#....#
-;...#....0...
-;....#0....#.
-;..#....0....
-;....0....#..
-;.#....#.....
-;...#........
-;#......#....
-;........A...
-;.........A..
-;..........#.
-;..........#.
