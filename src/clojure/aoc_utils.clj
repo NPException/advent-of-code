@@ -191,17 +191,19 @@
        (when coll
          (if (pred e) i (recur more (inc i)))))))
   ([pred ^long from-index coll]
-   (if (instance? Indexed coll)
-     ;; Indexed fast path
-     (let [len (count coll)]
-       (loop [i from-index]
-         (when (< i len)
-           (if (pred (nth coll i)) i (recur (inc i))))))
-     ;; seq fallback
-     (loop [[e & more :as coll] (seq (drop from-index coll))
-            i from-index]
-       (when coll
-         (if (pred e) i (recur more (inc i))))))))
+   (let [len (count coll)
+         from-index (if (>= from-index 0) from-index 0)]
+     (when (< from-index len)
+       (if (instance? Indexed coll)
+         ;; Indexed fast path
+         (loop [i from-index]
+           (when (< i len)
+             (if (pred (nth coll i)) i (recur (inc i)))))
+         ;; seq fallback
+         (loop [[e & more :as coll] (seq (drop from-index coll))
+                i from-index]
+           (when coll
+             (if (pred e) i (recur more (inc i))))))))))
 
 
 (defn last-index-of
@@ -215,21 +217,25 @@
        (when coll
          (if (pred e) i (recur more (dec i)))))))
   ([pred ^long from-index coll]
-   (let [len (count coll)]
-     (if (instance? Indexed coll)
-       ;; Indexed fast path
-       (loop [i from-index]
-         (when (>= i 0)
-           (if (pred (nth coll i)) i (recur (dec i)))))
-       ;; seq fallback
-       (loop [[e & more :as coll] (->> (if (instance? Reversible coll)
-                                         (rseq coll)
-                                         (seq (reverse coll)))
-                                       (drop (- (dec len) from-index))
-                                       (seq))
-              i from-index]
-         (when coll
-           (if (pred e) i (recur more (dec i)))))))))
+   (let [len (count coll)
+         ; clamp from-index to max index
+         from-index (if (< from-index len) from-index (dec len))]
+     ; higher than len from-index is allowed to start search
+     (when (>= from-index 0)
+       (if (instance? Indexed coll)
+         ;; Indexed fast path
+         (loop [i from-index]
+           (when (>= i 0)
+             (if (pred (nth coll i)) i (recur (dec i)))))
+         ;; seq fallback
+         (loop [[e & more :as coll] (->> (if (instance? Reversible coll)
+                                           (rseq coll)
+                                           (seq (reverse coll)))
+                                         (drop (- (dec len) from-index))
+                                         (seq))
+                i from-index]
+           (when coll
+             (if (pred e) i (recur more (dec i))))))))))
 
 
 (defn update!
