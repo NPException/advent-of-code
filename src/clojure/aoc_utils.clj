@@ -5,11 +5,11 @@
             [clojure.string :as str]
             [clojure.walk :as walk]
             [web-utils :as web])
-  (:import (clojure.lang IPersistentVector PersistentQueue)
+  (:import (clojure.lang IPersistentVector Indexed PersistentQueue Reversible)
            (de.npe.utils LongBox)
            (java.security MessageDigest)
            (java.time LocalDateTime)
-           (java.util Arrays Comparator HashMap HashSet PriorityQueue)
+           (java.util Arrays Comparator HashMap HashSet List PriorityQueue)
            (java.util.function ToDoubleFunction)))
 
 (set! *warn-on-reflection* true)
@@ -37,13 +37,13 @@
   (when (even? (count parse-fns-and-split-regexes))
     (throw (IllegalArgumentException. "args must be odd")))
   ;; do actual macro
-  (let [parse-fns     (take-nth 2 parse-fns-and-split-regexes)
-        split-keys    (take-nth 2 (drop 1 parse-fns-and-split-regexes))
-        split-syms    (repeatedly (count split-keys) #(gensym "split-on_"))
+  (let [parse-fns (take-nth 2 parse-fns-and-split-regexes)
+        split-keys (take-nth 2 (drop 1 parse-fns-and-split-regexes))
+        split-syms (repeatedly (count split-keys) #(gensym "split-on_"))
         remaining-sym (with-meta (gensym "remaining_") {:tag "java.lang.String"})
-        result-syms   (concat
-                        (repeatedly (count split-keys) #(gensym "result_"))
-                        [remaining-sym])]
+        result-syms (concat
+                      (repeatedly (count split-keys) #(gensym "result_"))
+                      [remaining-sym])]
     `(let [~@(interleave split-syms split-keys)
            ~remaining-sym ~input
            ~@(concat (mapcat
@@ -53,7 +53,7 @@
                        split-syms
                        result-syms))]
        [~@(remove #(or (keyword? (first %))
-                       (nil? (first %)))
+                     (nil? (first %)))
             (map list parse-fns result-syms))])))
 
 
@@ -84,8 +84,8 @@
   (if (bytes? bytes)
     ;; fast path
     (let [^bytes bytes bytes
-          byte-num     (alength bytes)
-          sb           (StringBuilder. ^long (* 2 byte-num))]
+          byte-num (alength bytes)
+          sb (StringBuilder. ^long (* 2 byte-num))]
       (loop [i 0]
         (when (< i byte-num)
           (.append sb (byte->hex (aget bytes i)))
@@ -174,22 +174,62 @@
 
 (defn index-of
   "Returns the index of the first element in coll which matches pred"
-  [pred coll]
-  (if (instance? Iterable coll)
-    ;; Iterator fastpath
-    (let [it (.iterator ^Iterable coll)]
-      (when (.hasNext it)
-        (loop [e (.next it)
-               i 0]
-          (if (pred e)
-            i
-            (when (.hasNext it)
-              (recur (.next it) (inc i)))))))
-    ;; seq fallback
-    (loop [[e & more :as coll] (seq coll)
-           i 0]
-      (when coll
-        (if (pred e) i (recur more (inc i)))))))
+  ([pred coll]
+   (if (instance? Iterable coll)
+     ;; Iterator fast path
+     (let [it (.iterator ^Iterable coll)]
+       (when (.hasNext it)
+         (loop [e (.next it)
+                i 0]
+           (if (pred e)
+             i
+             (when (.hasNext it)
+               (recur (.next it) (inc i)))))))
+     ;; seq fallback
+     (loop [[e & more :as coll] (seq coll)
+            i 0]
+       (when coll
+         (if (pred e) i (recur more (inc i)))))))
+  ([pred ^long from-index coll]
+   (if (instance? Indexed coll)
+     ;; Indexed fast path
+     (let [len (count coll)]
+       (loop [i from-index]
+         (when (< i len)
+           (if (pred (nth coll i)) i (recur (inc i))))))
+     ;; seq fallback
+     (loop [[e & more :as coll] (seq (drop from-index coll))
+            i from-index]
+       (when coll
+         (if (pred e) i (recur more (inc i))))))))
+
+
+(defn last-index-of
+  "Returns the index of the last element in coll which matches pred"
+  ([pred coll]
+   (let [last-index (dec (count coll))]
+     (loop [[e & more :as coll] (if (instance? Reversible coll)
+                                  (rseq coll)
+                                  (seq (reverse coll)))
+            i last-index]
+       (when coll
+         (if (pred e) i (recur more (dec i)))))))
+  ([pred ^long from-index coll]
+   (let [len (count coll)]
+     (if (instance? Indexed coll)
+       ;; Indexed fast path
+       (loop [i from-index]
+         (when (>= i 0)
+           (if (pred (nth coll i)) i (recur (dec i)))))
+       ;; seq fallback
+       (loop [[e & more :as coll] (->> (if (instance? Reversible coll)
+                                         (rseq coll)
+                                         (seq (reverse coll)))
+                                       (drop (- (dec len) from-index))
+                                       (seq))
+              i from-index]
+         (when coll
+           (if (pred e) i (recur more (dec i)))))))))
 
 
 (defn update!
@@ -258,7 +298,7 @@
   "Returns a lazy sequence of all possible
   rearrangements for a collection of unique elements."
   [col]
-  (let [vcol    (vec col)
+  (let [vcol (vec col)
         indices ((fn iperms [indices]
                    (lazy-seq
                      (if (next indices)
@@ -275,15 +315,15 @@
 (defn combinations
   "Generate a list of all possible n-sized tuple combinations in coll."
   [n coll]
-  (let [coll     (vec coll)
-        size     (count coll)
+  (let [coll (vec coll)
+        size (count coll)
         comb-aux (fn comb-aux
                    [^long m ^long start]
                    (if (= 1 m)
                      (for [x (range start size)]
                        (list (nth coll x)))
                      (for [^long x (range start size)
-                           xs      (comb-aux (dec m) (inc x))]
+                           xs (comb-aux (dec m) (inc x))]
                        (cons (nth coll x) xs))))]
     (comb-aux n 0)))
 
@@ -292,8 +332,8 @@
   "Returns the sum of integers in the given range."
   [^long from ^long to]
   (/ (* (inc (- to from))
-        (+ from to))
-     2))
+       (+ from to))
+    2))
 
 
 (defn partitions
@@ -311,8 +351,8 @@
 (defn find-all-divisors
   "Returns a vector of all possible divisors of n in ascending order."
   [^long n]
-  (let [low-divs         (->> (range 1 (inc (long (math/sqrt n))))
-                              (filterv #(zero? (rem n ^long %))))
+  (let [low-divs (->> (range 1 (inc (long (math/sqrt n))))
+                      (filterv #(zero? (rem n ^long %))))
         skip-first-high? (let [^long i (peek low-divs)]
                            (= i (quot n i)))]
     (into low-divs
@@ -359,13 +399,13 @@
   ([^long n] (partitioning n n))
   ([^long n ^long step]
    ;; blank partition only used to efficiently clear partition elements on finish to allow GC
-   (let [blank-partition     (object-array n)
-         last-index          (dec n)
-         step-diff           (- n step)
+   (let [blank-partition (object-array n)
+         last-index (dec n)
+         step-diff (- n step)
          needs-partial-copy? (pos? step-diff)]
      (fn [rf]
        (let [partition (object-array n)
-             length    (LongBox. 0)]
+             length (LongBox. 0)]
          (fn
            ([] (rf))
            ([result]
@@ -467,7 +507,7 @@
              ; we ran out of `col`, but still have `sub` left
              false
              (if (= (nth col (+ i offset))
-                    (nth sub i))
+                   (nth sub i))
                (recur (inc i))
                ; an element didn't match, so the result is false
                false))))))))
@@ -497,15 +537,15 @@
   Returned are tuples of [x y element]"
   ([grid]
    (let [height (count grid)
-         width  (count (first grid))]
+         width (count (first grid))]
      (grid-elements grid 0 width 0 height)))
   ([grid from-x to-x from-y to-y]
    (when (< ^long from-y ^long to-y)
      (lazy-cat
        (let [^long end-x to-x
-             ^long y     from-y]
+             ^long y from-y]
          (loop [^long x from-x
-                row     (transient [])]
+                row (transient [])]
            (if (= x end-x)
              (persistent! row)
              (recur (inc x) (conj! row (grid-element grid x y))))))
@@ -516,7 +556,7 @@
   Grid elements are in the form of [x y value] and will be passed as is to the predicate."
   [grid pred]
   (let [height (count grid)
-        width  (count (first grid))]
+        width (count (first grid))]
     (for [y (range 0 height)
           x (range 0 width)
           :let [element (grid-element grid x y)]
@@ -529,10 +569,10 @@
   Inserts x as the first item (fn position) in the first form, making a list of it if it is not a list already.
   If there are more forms, inserts the first form as the first item in second form, etc."
   [x & forms]
-  (loop [x     x,
+  (loop [x x,
          forms forms]
     (if forms
-      (let [form     (first forms)
+      (let [form (first forms)
             threaded (if (seq? form)
                        (with-meta `(~x ~@form) (meta form))
                        `(~x ~form))]
@@ -596,7 +636,7 @@
 
 (defn prime-factors
   [^long n]
-  (loop [n       n
+  (loop [n n
          divisor 2
          factors []]
     (if (<= n 1)
@@ -629,17 +669,17 @@
 
 (defn ^:private graph-search
   [coll graph rf children-fn ctx start]
-  (loop [coll    (conj coll start)
+  (loop [coll (conj coll start)
          visited #{}
-         ctx     ctx]
+         ctx ctx]
     (cond
       (empty? coll) ctx
       (visited (peek coll)) (recur (pop coll) visited ctx)
-      :else (let [curr    (peek coll)
-                  node    (graph curr)
-                  coll    (into (pop coll) (children-fn node))
+      :else (let [curr (peek coll)
+                  node (graph curr)
+                  coll (into (pop coll) (children-fn node))
                   visited (conj visited curr)
-                  ctx     (rf ctx curr node)]
+                  ctx (rf ctx curr node)]
               (recur coll visited ctx)))))
 
 
@@ -664,10 +704,10 @@
                    (Bad estimates can make the search really slow. When unsure, try `(constantly 0)` as fallback.
   `cost-fn` - Given the current state and a neighbor state, must return the cost of moving to the neighbor state."
   [starts goal? neighbours-fn heuristic-fn cost-fn]
-  (let [came-from  (HashMap.)                               ;; For node n, (came-from n) is the node immediately preceding it on the cheapest path from start to n currently known.
-        g-score    (HashMap.)                               ;; <double> For node n, (g-score n) is the cost of the cheapest path from start to n currently known. (default: infinity)
-        f-score    (HashMap.)                               ;; <double> For node n, (f-score n) is (g-score n) + (heuristic-fn n). (f-score n) represents our current best guess as to how short a path from start to finish can be if it goes through n.
-        open-set   (HashSet.)                               ;; The set of discovered nodes that may need to be (re-)expanded. Initially, only the start node is known.
+  (let [came-from (HashMap.)                                ;; For node n, (came-from n) is the node immediately preceding it on the cheapest path from start to n currently known.
+        g-score (HashMap.)                                  ;; <double> For node n, (g-score n) is the cost of the cheapest path from start to n currently known. (default: infinity)
+        f-score (HashMap.)                                  ;; <double> For node n, (f-score n) is (g-score n) + (heuristic-fn n). (f-score n) represents our current best guess as to how short a path from start to finish can be if it goes through n.
+        open-set (HashSet.)                                 ;; The set of discovered nodes that may need to be (re-)expanded. Initially, only the start node is known.
         open-queue (PriorityQueue.
                      (Comparator/comparingDouble
                        (reify ToDoubleFunction
@@ -682,7 +722,7 @@
         (.remove open-set current)
         (if (goal? current)
           ;; construct result
-          (loop [n    current
+          (loop [n current
                  path (list current)]
             (if-some [n (.get came-from n)]
               (recur n (conj path n))
@@ -692,7 +732,7 @@
                 ;; (cost-fn current neighbor) is the weight of the edge from current to neighbor
                 ;; tentative-g-score is the distance from start to the neighbor through current
                 (let [tentative-g-score (+ ^double (.getOrDefault g-score current Double/POSITIVE_INFINITY)
-                                           (.doubleValue ^Number (cost-fn current neighbour)))]
+                                          (.doubleValue ^Number (cost-fn current neighbour)))]
                   (when (< tentative-g-score ^double (.getOrDefault g-score neighbour Double/POSITIVE_INFINITY))
                     ;; This path to neighbor is better than any previous one. Record it!
                     (.put came-from neighbour current)
@@ -717,7 +757,7 @@
      ([a b] (and (pred1 a b) (pred2 a b)))
      ([a b c] (and (pred1 a b c) (pred2 a b c)))
      ([a b c & more] (and (apply pred1 a b c more)
-                          (apply pred2 a b c more)))))
+                       (apply pred2 a b c more)))))
   ([pred1 pred2 & preds]
    (and-fn pred1 (apply and-fn pred2 preds))))
 
@@ -732,7 +772,7 @@
      ([a b] (or (pred1 a b) (pred2 a b)))
      ([a b c] (or (pred1 a b c) (pred2 a b c)))
      ([a b c & more] (or (apply pred1 a b c more)
-                         (apply pred2 a b c more)))))
+                       (apply pred2 a b c more)))))
   ([pred1 pred2 & preds]
    (or-fn pred1 (apply or-fn pred2 preds))))
 
@@ -770,15 +810,15 @@
   [p-pred q-pred]
   (fn
     ([] (= (boolean (p-pred))
-           (boolean (q-pred))))
+          (boolean (q-pred))))
     ([a] (= (boolean (p-pred a))
-            (boolean (q-pred a))))
+           (boolean (q-pred a))))
     ([a b] (= (boolean (p-pred a b))
-              (boolean (q-pred a b))))
+             (boolean (q-pred a b))))
     ([a b c] (= (boolean (p-pred a b c))
-                (boolean (q-pred a b c))))
+               (boolean (q-pred a b c))))
     ([a b c & more] (= (apply p-pred a b c more)
-                       (apply q-pred a b c more)))))
+                      (apply q-pred a b c more)))))
 
 
 
@@ -787,10 +827,10 @@
 (defn ^:private load-session-id
   []
   (if-some [session-id (or *aoc-session-id*
-                           (System/getenv "AOC_SESSION")
-                           (try
-                             (str/trim (slurp "session-id.txt"))
-                             (catch Exception _)))]
+                         (System/getenv "AOC_SESSION")
+                         (try
+                           (str/trim (slurp "session-id.txt"))
+                           (catch Exception _)))]
     session-id
     (throw (IllegalStateException. "No AOC session id present. You have 3 options to specify one:
              Bind it to `aoc-utils/*aoc-session-id*` via `binding`,
@@ -805,14 +845,14 @@
    (let [now (LocalDateTime/now)]
      (start-day (-> now .getYear) (-> now .getDayOfMonth))))
   ([year day]
-   (let [headers     {:headers {"cookie" (str "session=" (load-session-id))}}
+   (let [headers {:headers {"cookie" (str "session=" (load-session-id))}}
          inputs-file (io/file (str "./resources/inputs/aoc_" year "/day-" day ".txt"))
-         ns-file     (io/file (str "./src/clojure/aoc_" year "/day_" day ".clj"))
-         input       (web/load-url (str "https://adventofcode.com/" year "/day/" day "/input") headers)
-         task-page   (web/load-hiccup (str "https://adventofcode.com/" year "/day/" day) headers)
-         task-title  (-> (web/search task-page :h2 nil)
-                         (web/body)
-                         first)]
+         ns-file (io/file (str "./src/clojure/aoc_" year "/day_" day ".clj"))
+         input (web/load-url (str "https://adventofcode.com/" year "/day/" day "/input") headers)
+         task-page (web/load-hiccup (str "https://adventofcode.com/" year "/day/" day) headers)
+         task-title (-> (web/search task-page :h2 nil)
+                        (web/body)
+                        first)]
      ;; create input text file
      (-> inputs-file .getParentFile .mkdirs)
      (when (.createNewFile inputs-file)
