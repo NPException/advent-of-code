@@ -1,6 +1,5 @@
 (ns aoc-2024.day-10
   (:require [aoc-utils :as u]
-            [clojure.math :as math]
             [clojure.string :as str]
             [criterium.core :as crit]))
 
@@ -38,6 +37,9 @@
   (u/find-grid-elements grid (fn [[_ _ e]]
                                (= e \0))))
 
+
+;; PART 1 ;;
+
 (defn trail-head-score
   [grid head]
   (count
@@ -55,9 +57,25 @@
          (apply +))))
 
 
+;; PART 2 ;;
+
+(defn trail-rating
+  [grid step [next-height & more-heights]]
+  ; If it's the last step, return 1. else sum up sub paths
+  (if (nil? next-height)
+    1
+    (->> (neighbours grid step)
+         (filterv (fn [[_ _ e]]
+                    (= e next-height)))
+         (mapv #(trail-rating grid % more-heights))
+         (apply +))))
+
 (defn part-2
   [input]
-  )
+  (let [grid (parse-grid input)]
+    (->> (find-trail-heads grid)
+         (mapv #(trail-rating grid % [\1 \2 \3 \4 \5 \6 \7 \8 \9]))
+         (apply +))))
 
 
 (comment
@@ -67,8 +85,8 @@
   (crit/quick-bench (part-1 task-input))
 
   ;; Part 2
-  (part-2 test-input)                                       ; =>
-  (part-2 task-input)                                       ; =>
+  (part-2 test-input)                                       ; => 81
+  (part-2 task-input)                                       ; => 969
   (crit/quick-bench (part-2 task-input))
 
   )
