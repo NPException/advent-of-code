@@ -1,8 +1,8 @@
 (ns aoc-2024.day-11
   (:require [aoc-utils :as u]
             [clojure.math :as math]
-            [clojure.string :as str]
-            [criterium.core :as crit]))
+            [criterium.core :as crit])
+  (:import (java.util HashMap)))
 
 (set! *warn-on-reflection* true)
 (set! *unchecked-math* :warn-on-boxed)
@@ -44,30 +44,34 @@
       (change-even-digits stone)
       (change-multiply stone)))
 
-(def change-xf (comp (map change-stone) cat))
 
-(defn change-stones
-  [stones]
-  (into [] change-xf stones))
+(declare count-sub-stone)
 
+(defn count-stones
+  [stones ^long iterations ^HashMap cache]
+  (->> stones
+       (mapv #(count-sub-stone % iterations cache))
+       (apply +)))
 
-(defn iterate-stones
-  [input ^long iterations]
-  (loop [stones (u/read-as-vector input)
-         n iterations]
-    (if (zero? n)
-      stones
-      (recur (change-stones stones) (dec n)))))
+(defn count-sub-stone
+  [stone ^long iterations ^HashMap cache]
+  (if (= 1 iterations)
+    (count (change-stone stone))
+    (if-let [cached (.get cache [stone iterations])]
+      cached
+      (let [computed (count-stones (change-stone stone) (dec iterations) cache)]
+        (.put cache [stone iterations] computed)
+        computed))))
 
 
 (defn part-1
   [input]
-  (count (iterate-stones input 25)))
+  (count-stones (u/read-as-vector input) 25 (HashMap.)))
 
 
 (defn part-2
   [input]
-  )
+  (count-stones (u/read-as-vector input) 75 (HashMap.)))
 
 
 
@@ -78,7 +82,7 @@
   (crit/quick-bench (part-1 task-input))
 
   ;; Part 2
-  (part-2 task-input)                                       ; =>
+  (part-2 task-input)                                       ; => 250783680217283
   (crit/quick-bench (part-2 task-input))
 
   )
