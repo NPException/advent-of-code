@@ -634,7 +634,8 @@
   (-> x (Math/min max) (Math/max min)))
 
 (defn num-digits
-  "returns the number of digits in the decimal representation of the given number"
+  "returns the number of digits in the decimal representation of the given number
+   (only for positive numbers)"
   ^long
   [^long x]
   (inc (long (math/log10 x))))
