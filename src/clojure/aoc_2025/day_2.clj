@@ -39,9 +39,36 @@
        (apply +)))
 
 
+(defn extract-digits
+  [^long from ^long i ^long n]
+  (-> from
+      (quot (math/pow 10 i))
+      (mod (math/pow 10 n))))
+
+
+(defn repeating-groups?
+  [x digits group-size]
+  (when (zero? (mod digits group-size))
+    (let [groups (quot digits group-size)
+          digit-groups (->> (range groups)
+                            (mapv #(extract-digits x (* % group-size) group-size)))]
+      (apply = digit-groups))))
+
+
+(defn n-repeat-digits?
+  [x]
+  (let [digits (u/num-digits x)]
+    (->> (range 1 (inc (quot digits 2)))
+         (some #(repeating-groups? x digits %)))))
+
+
 (defn part-2
   [input]
-  )
+  (->> (parse-input input)
+       (mapcat (fn [[from to]]
+                 (range from (inc to))))
+       (filterv n-repeat-digits?)
+       (apply +)))
 
 
 (comment
